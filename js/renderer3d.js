@@ -231,17 +231,55 @@ class PoolRenderer3D {
       }
     }
 
-    // 6 Pockets cleanly above felt (no Z-fighting)
-    const rimMat = new THREE.MeshStandardMaterial({ color: '#1b0d06', roughness: 0.7 });
-    const pocketMat = new THREE.MeshBasicMaterial({ color: '#030508' });
+    // 6 Pro Drop-Pockets with radial depth texture & leather/brass collars
+    const pCanvas = document.createElement('canvas');
+    pCanvas.width = 128;
+    pCanvas.height = 128;
+    const pCtx = pCanvas.getContext('2d');
+    const pGrad = pCtx.createRadialGradient(64, 64, 10, 64, 64, 62);
+    pGrad.addColorStop(0, '#000000');
+    pGrad.addColorStop(0.68, '#05070a');
+    pGrad.addColorStop(0.86, '#1f1109');
+    pGrad.addColorStop(0.95, '#3b2010');
+    pGrad.addColorStop(1, '#140a04');
+    pCtx.fillStyle = pGrad;
+    pCtx.beginPath();
+    pCtx.arc(64, 64, 62, 0, Math.PI * 2);
+    pCtx.fill();
+    const pocketTex = new THREE.CanvasTexture(pCanvas);
+
+    const pocketMat = new THREE.MeshBasicMaterial({ map: pocketTex, transparent: true });
+    const collarMat = new THREE.MeshStandardMaterial({ color: '#1f120b', roughness: 0.65, metalness: 0.1 });
+    const ringMat = new THREE.MeshStandardMaterial({ color: '#c59b47', roughness: 0.3, metalness: 0.8 });
+
     for (const p of POCKETS) {
       const wx = this.toWorldX(p.x);
       const wz = this.toWorldZ(p.y);
-      const rim = new THREE.Mesh(new THREE.CylinderGeometry(p.r + 5, p.r + 5, 0.8, 24), rimMat);
-      rim.position.set(wx, 0.4, wz);
-      const hole = new THREE.Mesh(new THREE.CylinderGeometry(p.r, p.r * 0.85, 1.2, 24), pocketMat);
-      hole.position.set(wx, 0.7, wz);
-      this.scene.add(rim, hole);
+
+      // Deep gradient pocket opening
+      const hole = new THREE.Mesh(new THREE.CylinderGeometry(p.r + 2, p.r + 2, 0.6, 32), pocketMat);
+      hole.position.set(wx, 0.45, wz);
+      this.scene.add(hole);
+
+      // Leather & brass pocket surround ring
+      const collar = new THREE.Mesh(
+        new THREE.TorusGeometry(p.r + 2.5, 3.2, 10, 32),
+        collarMat
+      );
+      collar.rotation.x = Math.PI / 2;
+      collar.position.set(wx, 1.8, wz);
+      this.scene.add(collar);
+
+      if (p.type === 'side') {
+        const trim = new THREE.Mesh(
+          new THREE.TorusGeometry(p.r + 5.2, 1.0, 8, 28, Math.PI),
+          ringMat
+        );
+        trim.rotation.x = Math.PI / 2;
+        trim.rotation.z = p.y < TABLE_H / 2 ? Math.PI : 0;
+        trim.position.set(wx, 2.2, wz);
+        this.scene.add(trim);
+      }
     }
   }
 
