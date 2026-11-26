@@ -18,8 +18,9 @@
 
   // Aim & Shot State
   const TURN_TIME_SEC = 30; // Standard tournament 30s shot clock
-  let turnTimeLeft = TURN_TIME_SEC;
+  let turnDeadline = Date.now() + TURN_TIME_SEC * 1000;
   let lastRenderedSec = -1;
+  let timeoutTriggeredForTurn = false;
   let aimAngle = 0;
   let shotPower = 0;
   let spinX = 0;
@@ -186,9 +187,14 @@
   }
 
   function resetTurnTimer() {
-    turnTimeLeft = TURN_TIME_SEC;
+    turnDeadline = Date.now() + TURN_TIME_SEC * 1000;
     lastRenderedSec = -1;
+    timeoutTriggeredForTurn = false;
     updateTimerUI();
+  }
+
+  function getTurnTimeLeft() {
+    return (turnDeadline - Date.now()) / 1000;
   }
 
   function updateTimerUI() {
@@ -199,7 +205,7 @@
       return;
     }
     el.classList.remove('hidden');
-    const sec = Math.max(0, Math.ceil(turnTimeLeft));
+    const sec = Math.max(0, Math.ceil(getTurnTimeLeft()));
     if (sec === lastRenderedSec) return;
     lastRenderedSec = sec;
     el.textContent = `⏱ ${sec}s`;
@@ -208,6 +214,8 @@
   }
 
   function handleTurnTimeout() {
+    if (timeoutTriggeredForTurn) return;
+    timeoutTriggeredForTurn = true;
     const other = rules.turn === 1 ? 2 : 1;
     rules.turn = other;
     rules.ballInHand = true;
@@ -241,6 +249,24 @@
       setTimeout(runAITurn, 300);
     }
   }
+
+  function checkTurnClock() {
+    if (physics.isMoving || rules.winner || rules.mode === 'practice') return;
+    if (!lobbyModal.classList.contains('hidden')) return;
+
+    const left = getTurnTimeLeft();
+    updateTimerUI();
+
+    if (playType !== 'online' || rules.turn === myPlayerIndex) {
+      if (left <= 0) handleTurnTimeout();
+    } else {
+      // Grace period if opponent's tab is backgrounded/AFK
+      if (left <= -1.5) handleTurnTimeout();
+    }
+  }
+
+  // Background-tab safe 500ms interval fallback for turn clock
+  setInterval(checkTurnClock, 500);
 
   function startNewMatch(mode) {
     rules = new PoolRules(mode);
@@ -425,17 +451,7 @@
     }
 
     // Update 30s turn shot clock when table is idle in an active match
-    if (!moving && !rules.winner && rules.mode !== 'practice' && lobbyModal.classList.contains('hidden')) {
-      turnTimeLeft -= elapsed / 1000;
-      updateTimerUI();
-      if (turnTimeLeft <= 0) {
-        if (playType !== 'online' || rules.turn === myPlayerIndex) {
-          handleTurnTimeout();
-        } else {
-          turnTimeLeft = 0;
-        }
-      }
-    }
+    checkTurnClock();
 
     const showCue = !moving && !rules.winner && !isPlacingCue;
     renderer.render(physics, {
