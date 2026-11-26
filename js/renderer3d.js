@@ -46,6 +46,7 @@ class PoolRenderer3D {
     const spot1 = new THREE.SpotLight('#fffbeb', 2.4, 1800, Math.PI / 3.1, 0.45, 1.0);
     spot1.position.set(-180, 560, 0);
     spot1.castShadow = true;
+    spot1.shadow.bias = -0.0015;
     spot1.shadow.mapSize.width = 1024;
     spot1.shadow.mapSize.height = 1024;
     spot1.target.position.set(-180, 0, 0);
@@ -54,6 +55,7 @@ class PoolRenderer3D {
     const spot2 = new THREE.SpotLight('#fffbeb', 2.4, 1800, Math.PI / 3.1, 0.45, 1.0);
     spot2.position.set(180, 560, 0);
     spot2.castShadow = true;
+    spot2.shadow.bias = -0.0015;
     spot2.shadow.mapSize.width = 1024;
     spot2.shadow.mapSize.height = 1024;
     spot2.target.position.set(180, 0, 0);
@@ -151,62 +153,67 @@ class PoolRenderer3D {
     body.position.y = -25;
     this.scene.add(body);
 
-    // Wood Rails (4 sides) positioned cleanly outside the cushion lip (no overlap / no Z-fighting)
-    const railMat = new THREE.MeshStandardMaterial({ color: '#4d220e', roughness: 0.35, metalness: 0.08 });
-    const cushionMat = new THREE.MeshStandardMaterial({ color: theme.cushion, roughness: 0.8 });
+    // Wood Rails & Cushions with clean pocket cutouts (no rail clipping through pockets!)
+    const railMat = new THREE.MeshStandardMaterial({ color: '#522510', roughness: 0.35, metalness: 0.08 });
+    const cushionMat = new THREE.MeshStandardMaterial({ color: theme.cushion, roughness: 0.78 });
 
-    const railH = 26;
+    const railH = 24;
     const cushionThick = 12;
-    const railThick = 50;
+    const railThick = 48;
 
-    // Top & Bottom rails + split cushions (leaving clean pocket mouths)
-    for (const sign of [-1, 1]) {
-      const rMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(TABLE_W - 8, railH, railThick),
-        railMat
-      );
-      rMesh.position.set(0, railH / 2 - 1, sign * (TABLE_H / 2 + cushionThick + railThick / 2));
-      rMesh.castShadow = true;
-      rMesh.receiveShadow = true;
-      this.scene.add(rMesh);
-
-      const segLen = TABLE_W / 2 - 64;
+    // Top & Bottom: 2 rail segments + 2 cushion segments per side (cleanly leaving side pocket at x=0 and corner pockets open)
+    const topSegLen = TABLE_W / 2 - 58;
+    for (const signZ of [-1, 1]) {
       for (const sideX of [-1, 1]) {
-        const cMesh = new THREE.Mesh(new THREE.BoxGeometry(segLen, 18, cushionThick), cushionMat);
-        cMesh.position.set(sideX * (TABLE_W / 4 + 2), 9.5, sign * (TABLE_H / 2 + cushionThick / 2));
+        const cx = sideX * (TABLE_W / 4 + 2);
+        const rMesh = new THREE.Mesh(new THREE.BoxGeometry(topSegLen, railH, railThick), railMat);
+        rMesh.position.set(cx, railH / 2, signZ * (TABLE_H / 2 + cushionThick + railThick / 2));
+        rMesh.castShadow = true;
+        rMesh.receiveShadow = true;
+        this.scene.add(rMesh);
+
+        const cMesh = new THREE.Mesh(new THREE.BoxGeometry(topSegLen, 18, cushionThick), cushionMat);
+        cMesh.position.set(cx, 9.5, signZ * (TABLE_H / 2 + cushionThick / 2));
         this.scene.add(cMesh);
       }
     }
 
-    // Left & Right rails + cushions
-    for (const sign of [-1, 1]) {
-      const rMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(railThick, railH, TABLE_H - 8),
-        railMat
-      );
-      rMesh.position.set(sign * (TABLE_W / 2 + cushionThick + railThick / 2), railH / 2 - 1, 0);
+    // Left & Right rails + cushions (stopping cleanly before corner pockets)
+    const sideSegLen = TABLE_H - 72;
+    for (const signX of [-1, 1]) {
+      const rMesh = new THREE.Mesh(new THREE.BoxGeometry(railThick, railH, sideSegLen), railMat);
+      rMesh.position.set(signX * (TABLE_W / 2 + cushionThick + railThick / 2), railH / 2, 0);
       rMesh.castShadow = true;
       rMesh.receiveShadow = true;
       this.scene.add(rMesh);
 
-      const cMesh = new THREE.Mesh(new THREE.BoxGeometry(cushionThick, 18, TABLE_H - 74), cushionMat);
-      cMesh.position.set(sign * (TABLE_W / 2 + cushionThick / 2), 9.5, 0);
+      const cMesh = new THREE.Mesh(new THREE.BoxGeometry(cushionThick, 18, sideSegLen), cushionMat);
+      cMesh.position.set(signX * (TABLE_W / 2 + cushionThick / 2), 9.5, 0);
       this.scene.add(cMesh);
     }
 
-    // Rounded Brushed-Brass & Leather Corner Pocket Castings (no square clipping!)
-    const brassMat = new THREE.MeshStandardMaterial({ color: '#d4af37', roughness: 0.25, metalness: 0.85 });
-    const cornerLeatherMat = new THREE.MeshStandardMaterial({ color: '#1b0f09', roughness: 0.65, metalness: 0.1 });
+    // Corner Pocket Hoods (outer brass + leather arch wrapping behind the corner pocket without clipping it)
+    const brassMat = new THREE.MeshStandardMaterial({ color: '#d4af37', roughness: 0.28, metalness: 0.85 });
+    const leatherMat = new THREE.MeshStandardMaterial({ color: '#1b0f09', roughness: 0.65, metalness: 0.1 });
     for (const sx of [-1, 1]) {
       for (const sz of [-1, 1]) {
-        const cx = sx * (TABLE_W / 2 + cushionThick + railThick / 2 - 4);
-        const cz = sz * (TABLE_H / 2 + cushionThick + railThick / 2 - 4);
-        const cap = new THREE.Mesh(new THREE.CylinderGeometry(33, 34, railH + 1, 24), brassMat);
-        cap.position.set(cx, railH / 2, cz);
-        const leatherTop = new THREE.Mesh(new THREE.CylinderGeometry(28, 28, 2, 24), cornerLeatherMat);
-        leatherTop.position.set(cx - sx * 3, railH + 0.8, cz - sz * 3);
-        this.scene.add(cap, leatherTop);
+        const px = sx * (TABLE_W / 2 - 4);
+        const pz = sz * (TABLE_H / 2 - 4);
+        // Outer curved corner block behind the pocket
+        const hood = new THREE.Mesh(
+          new THREE.CylinderGeometry(36, 36, railH, 24, 1, false, 0, Math.PI * 2),
+          brassMat
+        );
+        hood.position.set(px + sx * 28, railH / 2, pz + sz * 28);
+        this.scene.add(hood);
       }
+    }
+
+    // Side Pocket Outer Leather Bridges (behind side pockets so no gap in rail)
+    for (const sz of [-1, 1]) {
+      const bridge = new THREE.Mesh(new THREE.BoxGeometry(62, railH, 28), leatherMat);
+      bridge.position.set(0, railH / 2, sz * (TABLE_H / 2 + cushionThick + railThick - 12));
+      this.scene.add(bridge);
     }
 
     // Diamond Sights
