@@ -16,12 +16,16 @@ class PoolRenderer {
     this.totalH = TABLE_H + this.railSize * 2;
     this.themeIndex = 0;
     this.tableName = 'Tân Vip';
+    this.tableSize = 34;
+    this.tableStyle = 'vip';
     this.scale = 1;
     this.dpr = window.devicePixelRatio || 1;
   }
 
-  setTableName(name) {
+  setTableStyle(name, size = 34, style = 'vip') {
     this.tableName = (name || '').trim() || 'Tân Vip';
+    this.tableSize = Math.max(18, Math.min(56, Number(size) || 34));
+    this.tableStyle = style || 'vip';
   }
 
   cycleTheme() {
@@ -240,43 +244,53 @@ class PoolRenderer {
 
     ctx.save();
     ctx.translate(cx, cy);
-
-    // Subtle outer emblem rings
-    ctx.beginPath();
-    ctx.arc(0, 0, 68, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(245, 208, 110, 0.16)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(0, 0, 61, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Crown / Star accent above text
-    ctx.fillStyle = 'rgba(245, 208, 110, 0.24)';
-    ctx.font = '700 13px "Be Vietnam Pro", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('★ VIP CLUB ★', 0, -24);
 
-    // Main table name text embossed on the felt
-    ctx.font = '800 30px "Be Vietnam Pro", sans-serif';
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
-    ctx.fillText(this.tableName, 1.5, 5.5);
+    const sz = Math.round(this.tableSize * 0.88);
+    const style = this.tableStyle;
 
-    const textGrad = ctx.createLinearGradient(-55, -10, 55, 18);
-    textGrad.addColorStop(0, 'rgba(253, 230, 138, 0.34)');
-    textGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.38)');
-    textGrad.addColorStop(1, 'rgba(245, 158, 11, 0.32)');
-    ctx.fillStyle = textGrad;
-    ctx.fillText(this.tableName, 0, 4);
+    if (style === 'vip') {
+      ctx.beginPath();
+      ctx.arc(0, 0, Math.max(54, sz * 1.9), 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(245, 208, 110, 0.18)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
 
-    // Subtitle
-    ctx.font = '600 9.5px "JetBrains Mono", monospace';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
-    ctx.fillText('PRO SKILL BILLIARDS', 0, 29);
+      ctx.fillStyle = 'rgba(245, 208, 110, 0.28)';
+      ctx.font = '700 11px "Be Vietnam Pro", sans-serif';
+      ctx.fillText('★ VIP CLUB ★', 0, -sz * 0.85);
+
+      ctx.font = `800 ${sz}px "Be Vietnam Pro", sans-serif`;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+      ctx.fillText(this.tableName, 1.5, 4.5);
+      const g = ctx.createLinearGradient(-55, -10, 55, 18);
+      g.addColorStop(0, 'rgba(253, 230, 138, 0.36)');
+      g.addColorStop(0.5, 'rgba(255, 255, 255, 0.4)');
+      g.addColorStop(1, 'rgba(245, 158, 11, 0.34)');
+      ctx.fillStyle = g;
+      ctx.fillText(this.tableName, 0, 3);
+    } else if (style === 'neon') {
+      ctx.shadowColor = 'rgba(56, 189, 248, 0.7)';
+      ctx.shadowBlur = 14;
+      ctx.font = `800 ${sz}px "Be Vietnam Pro", sans-serif`;
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.55)';
+      ctx.lineWidth = 2;
+      ctx.strokeText(this.tableName, 0, 0);
+      ctx.fillStyle = 'rgba(224, 242, 254, 0.45)';
+      ctx.fillText(this.tableName, 0, 0);
+    } else if (style === 'classic') {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-sz * 2.3, -sz * 0.85, sz * 4.6, sz * 1.7);
+      ctx.font = `700 ${sz}px Georgia, "Times New Roman", serif`;
+      ctx.fillStyle = 'rgba(255, 248, 220, 0.36)';
+      ctx.fillText(this.tableName, 0, 1);
+    } else {
+      ctx.font = `800 ${sz}px "Be Vietnam Pro", sans-serif`;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+      ctx.fillText(this.tableName, 0, 0);
+    }
 
     ctx.restore();
   }

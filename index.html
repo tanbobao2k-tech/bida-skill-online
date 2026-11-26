@@ -164,8 +164,21 @@
         </div>
 
         <div class="form-group">
-          <label for="table-name-input">Tên bàn (in giữa mặt bàn)</label>
+          <label for="table-name-input">Tên bàn & Phong cách chữ giữa bàn</label>
           <input type="text" id="table-name-input" placeholder="VD: Tân Vip" maxlength="18" />
+          <div class="table-style-row">
+            <select id="table-style-select" title="Phong cách chữ">
+              <option value="vip">✨ Hoàng Gia (VIP Gold)</option>
+              <option value="neon">🔥 Neon Hiện Đại</option>
+              <option value="classic">🏛️ Cổ Điển (Serif)</option>
+              <option value="minimal">⚡ Tối Giản</option>
+            </select>
+            <div class="size-control">
+              <span>Cỡ:</span>
+              <input type="range" id="table-size-range" min="18" max="56" value="34" />
+              <span id="table-size-val">34</span>
+            </div>
+          </div>
         </div>
 
         <div class="form-group">
@@ -222,6 +235,34 @@
       </div>
     </div>
 
+    <!-- Table Text Customizer Modal (In-Game) -->
+    <div class="modal-backdrop hidden" id="table-style-modal">
+      <div class="modal-card" style="max-width: 380px;">
+        <h2 style="font-size: 17px;">✏️ Tùy chỉnh chữ giữa bàn</h2>
+        <div class="form-group">
+          <label for="modal-table-name">Tên bàn</label>
+          <input type="text" id="modal-table-name" maxlength="18" placeholder="VD: Tân Vip" />
+        </div>
+        <div class="form-group">
+          <label for="modal-table-style">Phong cách</label>
+          <select id="modal-table-style">
+            <option value="vip">✨ Hoàng Gia (VIP Gold)</option>
+            <option value="neon">🔥 Neon Hiện Đại</option>
+            <option value="classic">🏛️ Cổ Điển (Serif)</option>
+            <option value="minimal">⚡ Tối Giản</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Cỡ chữ: <span id="modal-size-val">34</span>px</label>
+          <input type="range" id="modal-table-size" min="18" max="56" value="34" />
+        </div>
+        <div class="gameover-actions">
+          <button class="btn-primary" id="btn-save-table-style">✅ Áp dụng</button>
+          <button class="btn-secondary" id="btn-close-table-style">Đóng</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Game Over Modal -->
     <div class="modal-backdrop hidden" id="gameover-modal">
       <div class="modal-card gameover-card">
@@ -236,13 +277,13 @@
     </div>
   </div>
 
-  <script src="js/audio.js?v=20261126g"></script>
-  <script src="js/physics.js?v=20261126g"></script>
-  <script src="js/rules.js?v=20261126g"></script>
-  <script src="js/renderer.js?v=20261126g"></script>
-  <script src="js/renderer3d.js?v=20261126g"></script>
-  <script src="js/network.js?v=20261126g"></script>
-  <script src="js/ai.js?v=20261126g"></script>
-  <script src="js/game.js?v=20261126g"></script>
+  <script src="js/audio.js?v=20261126h"></script>
+  <script src="js/physics.js?v=20261126h"></script>
+  <script src="js/rules.js?v=20261126h"></script>
+  <script src="js/renderer.js?v=20261126h"></script>
+  <script src="js/renderer3d.js?v=20261126h"></script>
+  <script src="js/network.js?v=20261126h"></script>
+  <script src="js/ai.js?v=20261126h"></script>
+  <script src="js/game.js?v=20261126h"></script>
 </body>
 </html>

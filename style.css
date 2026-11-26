@@ -744,6 +744,44 @@ body {
   color: var(--text-muted);
 }
 
+select {
+  background: #0b0f17;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-main);
+  padding: 9px 10px;
+  border-radius: 10px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  outline: none;
+}
+
+.table-style-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.table-style-row select {
+  flex: 1;
+}
+
+.size-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #0b0f17;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.size-control input[type="range"] {
+  width: 72px;
+  accent-color: var(--accent-emerald);
+}
+
 input[type="text"] {
   background: #0b0f17;
   border: 1px solid rgba(255, 255, 255, 0.12);

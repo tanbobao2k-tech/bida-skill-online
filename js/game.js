@@ -54,6 +54,14 @@
   const gameoverModal = document.getElementById('gameover-modal');
   const playerNameInput = document.getElementById('player-name-input');
   const tableNameInput = document.getElementById('table-name-input');
+  const tableStyleSelect = document.getElementById('table-style-select');
+  const tableSizeRange = document.getElementById('table-size-range');
+  const tableSizeVal = document.getElementById('table-size-val');
+  const tableStyleModal = document.getElementById('table-style-modal');
+  const modalTableName = document.getElementById('modal-table-name');
+  const modalTableStyle = document.getElementById('modal-table-style');
+  const modalTableSize = document.getElementById('modal-table-size');
+  const modalSizeVal = document.getElementById('modal-size-val');
   const roomCodeInput = document.getElementById('room-code-input');
   const onlineStatus = document.getElementById('online-status');
   const onlineStatusText = document.getElementById('online-status-text');
@@ -72,23 +80,46 @@
   const chatBadge = document.getElementById('chat-badge');
   let unreadChatCount = 0;
 
-  // Restore saved nickname & table name
+  // Restore saved nickname & table style
   playerNameInput.value = localStorage.getItem('bida_name') || 'Cơ thủ';
-  const savedTableName = localStorage.getItem('bida_table_name') || 'Tân Vip';
-  tableNameInput.value = savedTableName;
-  applyTableName(savedTableName, false);
+  let currentTableStyle = {
+    name: localStorage.getItem('bida_table_name') || 'Tân Vip',
+    size: Number(localStorage.getItem('bida_table_size')) || 34,
+    style: localStorage.getItem('bida_table_style') || 'vip',
+  };
 
-  function applyTableName(name, save = true) {
-    const clean = (name || '').trim() || 'Tân Vip';
-    if (save) localStorage.setItem('bida_table_name', clean);
-    tableNameInput.value = clean;
-    renderer.setTableName(clean);
-    if (renderer3d) renderer3d.setTableName(clean);
-    return clean;
+  function applyTableStyle(name, size, style, save = true) {
+    const cleanName = (name || '').trim() || 'Tân Vip';
+    const cleanSize = Math.max(18, Math.min(56, Number(size) || 34));
+    const cleanStyle = style || 'vip';
+    currentTableStyle = { name: cleanName, size: cleanSize, style: cleanStyle };
+
+    if (save) {
+      localStorage.setItem('bida_table_name', cleanName);
+      localStorage.setItem('bida_table_size', String(cleanSize));
+      localStorage.setItem('bida_table_style', cleanStyle);
+    }
+
+    tableNameInput.value = cleanName;
+    tableStyleSelect.value = cleanStyle;
+    tableSizeRange.value = cleanSize;
+    tableSizeVal.textContent = cleanSize;
+
+    renderer.setTableStyle(cleanName, cleanSize, cleanStyle);
+    if (renderer3d) renderer3d.setTableStyle(cleanName, cleanSize, cleanStyle);
+    return currentTableStyle;
   }
 
+  applyTableStyle(currentTableStyle.name, currentTableStyle.size, currentTableStyle.style, false);
+
   tableNameInput.addEventListener('input', () => {
-    applyTableName(tableNameInput.value, true);
+    applyTableStyle(tableNameInput.value, tableSizeRange.value, tableStyleSelect.value, true);
+  });
+  tableStyleSelect.addEventListener('change', () => {
+    applyTableStyle(tableNameInput.value, tableSizeRange.value, tableStyleSelect.value, true);
+  });
+  tableSizeRange.addEventListener('input', () => {
+    applyTableStyle(tableNameInput.value, tableSizeRange.value, tableStyleSelect.value, true);
   });
 
   // Toast helper
@@ -116,7 +147,7 @@
       net.sendRoom({
         type: 'WELCOME',
         hostName: playerNames[1],
-        tableName: renderer.tableName,
+        tableStyle: currentTableStyle,
         mode: net.mode,
         balls: physics.exportState(),
       });
@@ -126,7 +157,9 @@
     onWelcome: (msg) => {
       playerNames[1] = msg.hostName || 'Chủ phòng';
       playerNames[2] = getPlayerName();
-      if (msg.tableName) applyTableName(msg.tableName, false);
+      if (msg.tableStyle) {
+        applyTableStyle(msg.tableStyle.name, msg.tableStyle.size, msg.tableStyle.style, false);
+      }
       myPlayerIndex = 2;
       playType = 'online';
       rules = new PoolRules(msg.mode);
@@ -186,9 +219,9 @@
         cue.x = msg.x;
         cue.y = msg.y;
       }
-    } else if (msg.type === 'TABLE_NAME') {
-      applyTableName(msg.tableName, false);
-      showToast(`Tên bàn đã đổi thành: ${renderer.tableName}`);
+    } else if (msg.type === 'TABLE_STYLE') {
+      applyTableStyle(msg.tableStyle.name, msg.tableStyle.size, msg.tableStyle.style, false);
+      showToast(`Tên bàn đã đổi thành: ${msg.tableStyle.name}`);
     } else if (msg.type === 'CHAT') {
       appendChat(msg.name, msg.text);
       showToast(`💬 ${msg.name}: ${msg.text}`, 2400);
@@ -758,12 +791,32 @@
   });
 
   document.getElementById('btn-table-name').addEventListener('click', () => {
-    const next = prompt('Nhập tên bàn mới (tối đa 18 ký tự):', renderer.tableName);
-    if (next === null) return;
-    const clean = applyTableName(next.slice(0, 18), true);
-    showToast(`Đã đổi tên bàn: ${clean}`);
+    modalTableName.value = currentTableStyle.name;
+    modalTableStyle.value = currentTableStyle.style;
+    modalTableSize.value = currentTableStyle.size;
+    modalSizeVal.textContent = currentTableStyle.size;
+    tableStyleModal.classList.remove('hidden');
+  });
+
+  modalTableSize.addEventListener('input', () => {
+    modalSizeVal.textContent = modalTableSize.value;
+  });
+
+  document.getElementById('btn-close-table-style').addEventListener('click', () => {
+    tableStyleModal.classList.add('hidden');
+  });
+
+  document.getElementById('btn-save-table-style').addEventListener('click', () => {
+    const updated = applyTableStyle(
+      modalTableName.value,
+      modalTableSize.value,
+      modalTableStyle.value,
+      true
+    );
+    tableStyleModal.classList.add('hidden');
+    showToast(`Đã cập nhật bàn: ${updated.name}`);
     if (playType === 'online') {
-      net.sendRoom({ type: 'TABLE_NAME', tableName: clean });
+      net.sendRoom({ type: 'TABLE_STYLE', tableStyle: updated });
     }
   });
 

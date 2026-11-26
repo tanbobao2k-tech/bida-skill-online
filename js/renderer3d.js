@@ -15,15 +15,17 @@ class PoolRenderer3D {
 
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.12;
+    this.renderer.toneMappingExposure = 1.1;
 
     this.ballMeshes = new Map();
     this.cueGroup = null;
     this.feltMesh = null;
     this.themeIndex = 0;
     this.tableName = 'Tân Vip';
+    this.tableSize = 34;
+    this.tableStyle = 'vip';
     this.raycaster = new THREE.Raycaster();
     this.tablePlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -BALL_R);
 
@@ -41,30 +43,27 @@ class PoolRenderer3D {
   }
 
   setupLights() {
-    const ambient = new THREE.AmbientLight('#cbd5e1', 0.55);
+    const ambient = new THREE.AmbientLight('#cbd5e1', 0.65);
     this.scene.add(ambient);
 
-    const spot1 = new THREE.SpotLight('#fffbeb', 2.4, 1800, Math.PI / 3.1, 0.45, 1.0);
-    spot1.position.set(-180, 560, 0);
-    spot1.castShadow = true;
-    spot1.shadow.bias = -0.0015;
-    spot1.shadow.mapSize.width = 1024;
-    spot1.shadow.mapSize.height = 1024;
-    spot1.target.position.set(-180, 0, 0);
-    this.scene.add(spot1, spot1.target);
+    // Single lightweight shadow-casting key light (512x512) for smooth 60fps performance
+    const keyLight = new THREE.DirectionalLight('#fffbeb', 1.25);
+    keyLight.position.set(80, 560, 120);
+    keyLight.castShadow = true;
+    keyLight.shadow.bias = -0.0015;
+    keyLight.shadow.mapSize.width = 512;
+    keyLight.shadow.mapSize.height = 512;
+    keyLight.shadow.camera.left = -560;
+    keyLight.shadow.camera.right = 560;
+    keyLight.shadow.camera.top = 340;
+    keyLight.shadow.camera.bottom = -340;
+    keyLight.shadow.camera.near = 100;
+    keyLight.shadow.camera.far = 1100;
+    this.scene.add(keyLight);
 
-    const spot2 = new THREE.SpotLight('#fffbeb', 2.4, 1800, Math.PI / 3.1, 0.45, 1.0);
-    spot2.position.set(180, 560, 0);
-    spot2.castShadow = true;
-    spot2.shadow.bias = -0.0015;
-    spot2.shadow.mapSize.width = 1024;
-    spot2.shadow.mapSize.height = 1024;
-    spot2.target.position.set(180, 0, 0);
-    this.scene.add(spot2, spot2.target);
-
-    const rim = new THREE.DirectionalLight('#93c5fd', 0.35);
-    rim.position.set(0, 300, -500);
-    this.scene.add(rim);
+    const fill = new THREE.DirectionalLight('#93c5fd', 0.35);
+    fill.position.set(-200, 320, -400);
+    this.scene.add(fill);
   }
 
   createFeltTexture(theme) {
@@ -96,36 +95,52 @@ class PoolRenderer3D {
       ctx.fill();
     }
 
-    // Center Emblem "Tân Vip"
+    // Center Emblem with customizable size & style
     ctx.save();
     ctx.translate(512, 256);
-    ctx.beginPath();
-    ctx.arc(0, 0, 74, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(245, 208, 110, 0.22)';
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(0, 0, 66, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
-
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(245, 208, 110, 0.34)';
-    ctx.font = '700 14px "Be Vietnam Pro", sans-serif';
-    ctx.fillText('★ VIP CLUB ★', 0, -28);
 
-    ctx.font = '800 34px "Be Vietnam Pro", sans-serif';
-    ctx.fillStyle = 'rgba(0,0,0,0.28)';
-    ctx.fillText(this.tableName, 2, 6);
-    ctx.fillStyle = 'rgba(253, 230, 138, 0.48)';
-    ctx.fillText(this.tableName, 0, 4);
+    const sz = this.tableSize || 34;
+    const style = this.tableStyle || 'vip';
 
-    ctx.font = '600 10px "JetBrains Mono", monospace';
-    ctx.fillStyle = 'rgba(255,255,255,0.22)';
-    ctx.fillText('PRO SKILL BILLIARDS', 0, 32);
+    if (style === 'vip') {
+      ctx.beginPath();
+      ctx.arc(0, 0, Math.max(60, sz * 2.05), 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(245, 208, 110, 0.24)';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(245, 208, 110, 0.36)';
+      ctx.font = '700 13px "Be Vietnam Pro", sans-serif';
+      ctx.fillText('★ VIP CLUB ★', 0, -sz * 0.9);
+
+      ctx.font = `800 ${sz}px "Be Vietnam Pro", sans-serif`;
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      ctx.fillText(this.tableName, 2, 5);
+      ctx.fillStyle = 'rgba(253, 230, 138, 0.5)';
+      ctx.fillText(this.tableName, 0, 3);
+    } else if (style === 'neon') {
+      ctx.shadowColor = 'rgba(56, 189, 248, 0.85)';
+      ctx.shadowBlur = 18;
+      ctx.font = `800 ${sz}px "Be Vietnam Pro", sans-serif`;
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
+      ctx.lineWidth = 2.5;
+      ctx.strokeText(this.tableName, 0, 0);
+      ctx.fillStyle = 'rgba(224, 242, 254, 0.6)';
+      ctx.fillText(this.tableName, 0, 0);
+    } else if (style === 'classic') {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-sz * 2.5, -sz * 0.9, sz * 5, sz * 1.8);
+      ctx.font = `700 ${sz}px Georgia, "Times New Roman", serif`;
+      ctx.fillStyle = 'rgba(255, 248, 220, 0.45)';
+      ctx.fillText(this.tableName, 0, 2);
+    } else {
+      ctx.font = `800 ${sz}px "Be Vietnam Pro", sans-serif`;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.36)';
+      ctx.fillText(this.tableName, 0, 0);
+    }
     ctx.restore();
 
     const tex = new THREE.CanvasTexture(c);
@@ -176,7 +191,7 @@ class PoolRenderer3D {
     const geo = new THREE.ExtrudeGeometry(shape, {
       depth: Math.max(2, h - bevel * 2),
       bevelEnabled: true,
-      bevelSegments: 4,
+      bevelSegments: 2,
       steps: 1,
       bevelSize: bevel,
       bevelThickness: bevel,
@@ -236,7 +251,6 @@ class PoolRenderer3D {
         const cx = sideX * (TABLE_W / 4 + 2);
         const rMesh = new THREE.Mesh(topRailGeo, railMat);
         rMesh.position.set(cx, railH / 2, signZ * (TABLE_H / 2 + cushionThick + railThick / 2));
-        rMesh.castShadow = true;
         rMesh.receiveShadow = true;
         this.scene.add(rMesh);
 
@@ -254,7 +268,6 @@ class PoolRenderer3D {
     for (const signX of [-1, 1]) {
       const rMesh = new THREE.Mesh(sideRailGeo, railMat);
       rMesh.position.set(signX * (TABLE_W / 2 + cushionThick + railThick / 2), railH / 2, 0);
-      rMesh.castShadow = true;
       rMesh.receiveShadow = true;
       this.scene.add(rMesh);
 
@@ -339,8 +352,10 @@ class PoolRenderer3D {
     }
   }
 
-  setTableName(name) {
+  setTableStyle(name, size = 34, style = 'vip') {
     this.tableName = (name || '').trim() || 'Tân Vip';
+    this.tableSize = Math.max(18, Math.min(56, Number(size) || 34));
+    this.tableStyle = style || 'vip';
     const theme = FELT_THEMES[this.themeIndex];
     if (this.feltMesh) {
       this.feltMesh.material.map.dispose();
@@ -406,7 +421,7 @@ class PoolRenderer3D {
   ensureBallMesh(ball) {
     let mesh = this.ballMeshes.get(ball.id);
     if (!mesh) {
-      const geo = new THREE.SphereGeometry(BALL_R, 28, 20);
+      const geo = new THREE.SphereGeometry(BALL_R, 22, 16);
       const mat = new THREE.MeshStandardMaterial({
         map: this.createBallTexture(ball),
         roughness: 0.16,
@@ -462,7 +477,7 @@ class PoolRenderer3D {
     const h = Math.max(200, Math.floor(containerHeight));
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
-    this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    this.renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
     this.renderer.setSize(w, h, false);
     this.canvas.style.width = `${w}px`;
     this.canvas.style.height = `${h}px`;
