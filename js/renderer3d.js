@@ -159,10 +159,10 @@ class PoolRenderer3D {
     const cushionThick = 12;
     const railThick = 50;
 
-    // Top & Bottom rails + split cushions (leaving side pocket gap)
+    // Top & Bottom rails + split cushions (leaving clean pocket mouths)
     for (const sign of [-1, 1]) {
       const rMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(TABLE_W + (cushionThick + railThick) * 2, railH, railThick),
+        new THREE.BoxGeometry(TABLE_W - 8, railH, railThick),
         railMat
       );
       rMesh.position.set(0, railH / 2 - 1, sign * (TABLE_H / 2 + cushionThick + railThick / 2));
@@ -170,7 +170,7 @@ class PoolRenderer3D {
       rMesh.receiveShadow = true;
       this.scene.add(rMesh);
 
-      const segLen = TABLE_W / 2 - 58;
+      const segLen = TABLE_W / 2 - 64;
       for (const sideX of [-1, 1]) {
         const cMesh = new THREE.Mesh(new THREE.BoxGeometry(segLen, 18, cushionThick), cushionMat);
         cMesh.position.set(sideX * (TABLE_W / 4 + 2), 9.5, sign * (TABLE_H / 2 + cushionThick / 2));
@@ -181,7 +181,7 @@ class PoolRenderer3D {
     // Left & Right rails + cushions
     for (const sign of [-1, 1]) {
       const rMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(railThick, railH, TABLE_H + cushionThick * 2),
+        new THREE.BoxGeometry(railThick, railH, TABLE_H - 8),
         railMat
       );
       rMesh.position.set(sign * (TABLE_W / 2 + cushionThick + railThick / 2), railH / 2 - 1, 0);
@@ -189,22 +189,23 @@ class PoolRenderer3D {
       rMesh.receiveShadow = true;
       this.scene.add(rMesh);
 
-      const cMesh = new THREE.Mesh(new THREE.BoxGeometry(cushionThick, 18, TABLE_H - 64), cushionMat);
+      const cMesh = new THREE.Mesh(new THREE.BoxGeometry(cushionThick, 18, TABLE_H - 74), cushionMat);
       cMesh.position.set(sign * (TABLE_W / 2 + cushionThick / 2), 9.5, 0);
       this.scene.add(cMesh);
     }
 
-    // Brass Corner Plates (raised 1 unit above rail to avoid Z-fighting)
+    // Rounded Brushed-Brass & Leather Corner Pocket Castings (no square clipping!)
     const brassMat = new THREE.MeshStandardMaterial({ color: '#d4af37', roughness: 0.25, metalness: 0.85 });
+    const cornerLeatherMat = new THREE.MeshStandardMaterial({ color: '#1b0f09', roughness: 0.65, metalness: 0.1 });
     for (const sx of [-1, 1]) {
       for (const sz of [-1, 1]) {
-        const cap = new THREE.Mesh(new THREE.BoxGeometry(54, railH + 2, 54), brassMat);
-        cap.position.set(
-          sx * (TABLE_W / 2 + cushionThick + railThick / 2),
-          railH / 2,
-          sz * (TABLE_H / 2 + cushionThick + railThick / 2)
-        );
-        this.scene.add(cap);
+        const cx = sx * (TABLE_W / 2 + cushionThick + railThick / 2 - 4);
+        const cz = sz * (TABLE_H / 2 + cushionThick + railThick / 2 - 4);
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(33, 34, railH + 1, 24), brassMat);
+        cap.position.set(cx, railH / 2, cz);
+        const leatherTop = new THREE.Mesh(new THREE.CylinderGeometry(28, 28, 2, 24), cornerLeatherMat);
+        leatherTop.position.set(cx - sx * 3, railH + 0.8, cz - sz * 3);
+        this.scene.add(cap, leatherTop);
       }
     }
 
@@ -277,6 +278,17 @@ class PoolRenderer3D {
         );
         trim.rotation.x = Math.PI / 2;
         trim.rotation.z = p.y < TABLE_H / 2 ? Math.PI : 0;
+        trim.position.set(wx, 2.2, wz);
+        this.scene.add(trim);
+      } else {
+        // Corner pocket brass outer arc
+        const angleToCenter = Math.atan2(-wz, -wx);
+        const trim = new THREE.Mesh(
+          new THREE.TorusGeometry(p.r + 5.0, 1.1, 8, 28, Math.PI * 1.1),
+          ringMat
+        );
+        trim.rotation.x = Math.PI / 2;
+        trim.rotation.z = angleToCenter + Math.PI * 0.45;
         trim.position.set(wx, 2.2, wz);
         this.scene.add(trim);
       }
