@@ -122,26 +122,19 @@ class PoolPhysics {
         const speed = Math.hypot(b.vx, b.vy);
         if (speed > 0.0001) {
           b.rollAngle += speed * dt * 0.08;
-          // Crisp, natural felt friction so balls don't crawl forever at low speed
-          const friction = speed > 2.5 ? 0.988 : 0.968;
+          // Natural tournament felt speed, clean stop below 0.12 so balls don't crawl forever
+          const friction = speed > 1.8 ? 0.991 : 0.976;
           const factor = Math.pow(friction, dt);
           b.vx *= factor;
           b.vy *= factor;
 
-          // Linear rolling drag at very low speed for a clean, realistic stop
-          const newSpeed = Math.hypot(b.vx, b.vy);
-          if (newSpeed < 0.14) {
+          if (Math.hypot(b.vx, b.vy) < 0.12) {
             b.vx = 0;
             b.vy = 0;
             b.spinX = 0;
             b.spinY = 0;
             b.spinActive = false;
           } else {
-            if (newSpeed < 1.5) {
-              const drag = Math.max(0, newSpeed - 0.008 * dt) / newSpeed;
-              b.vx *= drag;
-              b.vy *= drag;
-            }
             anyMoving = true;
           }
         }

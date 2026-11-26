@@ -296,43 +296,55 @@
     gameoverModal.classList.remove('hidden');
   }
 
-  // Main Animation & Physics Loop
+  // Main Animation & Fixed-60Hz Physics Loop (ensures 60Hz & 120Hz+ screens stay in sync)
   let wasMoving = false;
-  function loop() {
-    const moving = physics.step();
+  let lastFrameTime = performance.now();
+  let accumulator = 0;
+  const FIXED_STEP_MS = 1000 / 60;
 
-    if (wasMoving && !moving) {
-      // Shot just finished!
-      if (playType !== 'online' || shotWasExecutedByMe) {
-        const res = rules.evaluateShot(physics, physics.shotEvents);
-        if (res.foul) audio.playFoul();
-        showToast(res.message);
-        updateHUD();
+  function loop(now = performance.now()) {
+    const elapsed = Math.min(100, now - lastFrameTime);
+    lastFrameTime = now;
+    accumulator += elapsed;
 
-        if (playType === 'online') {
-          net.sendRoom({
-            type: 'SYNC_STATE',
-            balls: physics.exportState(),
-            turn: rules.turn,
-            isBreakShot: rules.isBreakShot,
-            ballInHand: rules.ballInHand,
-            groups: rules.groups,
-            tableOpen: rules.tableOpen,
-            pocketedBy: rules.pocketedBy,
-            winner: rules.winner,
-            winReason: rules.winReason,
-            toast: res.message,
-          });
-        }
+    let moving = physics.isMoving;
+    while (accumulator >= FIXED_STEP_MS) {
+      moving = physics.step();
+      accumulator -= FIXED_STEP_MS;
 
-        if (res.gameOver) {
-          showGameOver();
-        } else if (playType === 'ai' && rules.turn === 2) {
-          setTimeout(runAITurn, 450);
+      if (wasMoving && !moving) {
+        // Shot just finished!
+        if (playType !== 'online' || shotWasExecutedByMe) {
+          const res = rules.evaluateShot(physics, physics.shotEvents);
+          if (res.foul) audio.playFoul();
+          showToast(res.message);
+          updateHUD();
+
+          if (playType === 'online') {
+            net.sendRoom({
+              type: 'SYNC_STATE',
+              balls: physics.exportState(),
+              turn: rules.turn,
+              isBreakShot: rules.isBreakShot,
+              ballInHand: rules.ballInHand,
+              groups: rules.groups,
+              tableOpen: rules.tableOpen,
+              pocketedBy: rules.pocketedBy,
+              winner: rules.winner,
+              winReason: rules.winReason,
+              toast: res.message,
+            });
+          }
+
+          if (res.gameOver) {
+            showGameOver();
+          } else if (playType === 'ai' && rules.turn === 2) {
+            setTimeout(runAITurn, 300);
+          }
         }
       }
+      wasMoving = moving;
     }
-    wasMoving = moving;
 
     const showCue = !moving && !rules.winner && !isPlacingCue;
     renderer.render(physics, {
