@@ -178,25 +178,23 @@ class PoolRules {
       return { message: this.winReason, gameOver: true };
     }
 
-    // 2. Check instant-loss for hitting 8-ball first before clearing own balls (after break)
-    if (!this.isBreakShot && !hadClearedOwnBeforeShot && events.firstHit === 8) {
-      this.winner = otherPlayer;
-      this.winReason = 'Bắn chạm bi số 8 trước khi ăn hết bi của mình — Thua cuộc!';
-      return { message: this.winReason, gameOver: true };
-    }
-
-    // 3. Check fouls
+    // 2. Check fouls (hitting 8-ball early is a foul -> Ball-in-Hand, NOT instant loss; pocketing 8-ball early is instant loss)
     let foulReason = null;
     if (scratched) {
       foulReason = 'Lỗi: Bi cái rơi lỗ!';
     } else if (events.firstHit === null) {
       foulReason = 'Lỗi: Không chạm bi nào!';
+    } else if (!this.isBreakShot && this.tableOpen && events.firstHit === 8) {
+      foulReason = 'Lỗi: Không được chạm bi số 8 trước khi chốt nhóm!';
     } else if (!this.isBreakShot && !this.tableOpen && currentGroup) {
       const hitGroup = this.getGroupOf(events.firstHit);
       if (hadClearedOwnBeforeShot) {
         if (events.firstHit !== 8) foulReason = 'Lỗi: Đã hết bi, phải chạm bi số 8 trước!';
       } else if (hitGroup !== currentGroup) {
-        foulReason = 'Lỗi: Chạm nhầm bi đối thủ trước!';
+        foulReason =
+          events.firstHit === 8
+            ? 'Lỗi: Chưa ăn hết bi của mình, chạm bi 8 là phạm lỗi!'
+            : 'Lỗi: Chạm nhầm bi đối thủ trước!';
       }
     }
 
