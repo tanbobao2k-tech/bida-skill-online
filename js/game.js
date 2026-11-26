@@ -50,6 +50,8 @@
   const spinDot = document.getElementById('spin-dot');
   const chatPanel = document.getElementById('chat-panel');
   const chatMessages = document.getElementById('chat-messages');
+  const chatBadge = document.getElementById('chat-badge');
+  let unreadChatCount = 0;
 
   // Restore saved nickname
   playerNameInput.value = localStorage.getItem('bida_name') || 'Cơ thủ';
@@ -149,7 +151,12 @@
       }
     } else if (msg.type === 'CHAT') {
       appendChat(msg.name, msg.text);
-      showToast(`💬 ${msg.name}: ${msg.text}`, 2200);
+      showToast(`💬 ${msg.name}: ${msg.text}`, 2400);
+      if (chatPanel.classList.contains('hidden')) {
+        unreadChatCount++;
+        chatBadge.textContent = unreadChatCount;
+        chatBadge.classList.remove('hidden');
+      }
     } else if (msg.type === 'REMATCH') {
       if (net.isHost) {
         startNewMatch(rules.mode);
@@ -660,9 +667,18 @@
     showToast(`Màu bàn: ${theme.name}`);
   });
 
-  document.getElementById('btn-chat-toggle').addEventListener('click', () => {
-    chatPanel.classList.toggle('hidden');
-  });
+  function toggleChatPanel(forceState) {
+    const show = forceState !== undefined ? forceState : chatPanel.classList.contains('hidden');
+    chatPanel.classList.toggle('hidden', !show);
+    if (show) {
+      unreadChatCount = 0;
+      chatBadge.classList.add('hidden');
+    }
+  }
+
+  document.getElementById('btn-chat-toggle').addEventListener('click', () => toggleChatPanel());
+  document.getElementById('btn-chat-open').addEventListener('click', () => toggleChatPanel());
+  document.getElementById('btn-chat-close').addEventListener('click', () => toggleChatPanel(false));
 
   document.getElementById('btn-menu').addEventListener('click', () => {
     net.disconnect();
@@ -679,11 +695,16 @@
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
-  document.querySelectorAll('.emote-btn').forEach((btn) => {
+  function sendChatMessage(text) {
+    const myName = getPlayerName();
+    appendChat(myName, text);
+    showToast(`💬 ${myName}: ${text}`, 1800);
+    if (playType === 'online') net.sendRoom({ type: 'CHAT', name: myName, text });
+  }
+
+  document.querySelectorAll('.emote-btn, .icon-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const text = btn.dataset.msg;
-      appendChat(getPlayerName(), text);
-      if (playType === 'online') net.sendRoom({ type: 'CHAT', name: getPlayerName(), text });
+      sendChatMessage(btn.dataset.msg);
     });
   });
 
@@ -693,8 +714,7 @@
     const text = input.value.trim();
     if (!text) return;
     input.value = '';
-    appendChat(getPlayerName(), text);
-    if (playType === 'online') net.sendRoom({ type: 'CHAT', name: getPlayerName(), text });
+    sendChatMessage(text);
   });
 
   // Lobby Controls

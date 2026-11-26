@@ -514,21 +514,104 @@ body {
   color: #fca5a5;
 }
 
+/* IN-GAME QUICK CHAT & ICON BAR */
+.in-game-chat-bar {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(11, 15, 23, 0.84);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  padding: 5px 8px;
+  border-radius: 99px;
+  z-index: 15;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+.chat-open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  color: #ecfdf5;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chat-badge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 99px;
+}
+
+.quick-icons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  line-height: 1;
+  padding: 4px 5px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.12s, background 0.12s;
+}
+
+.icon-btn:hover {
+  transform: scale(1.22);
+  background: rgba(255, 255, 255, 0.1);
+}
+
 /* CHAT PANEL */
 .chat-panel {
   position: fixed;
-  right: 172px;
-  bottom: 16px;
-  width: 280px;
+  left: 20px;
+  bottom: 66px;
+  width: 310px;
   background: rgba(19, 26, 38, 0.96);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 14px;
   padding: 10px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   z-index: 30;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65);
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 6px;
+}
+
+.btn-chat-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
 }
 
 .chat-messages {

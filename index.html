@@ -61,6 +61,22 @@
         <div class="bih-hint hidden" id="bih-hint">
           ✋ Kéo bi cái đến vị trí muốn đặt rồi thả/nhấn để xác nhận
         </div>
+        <!-- Always-available In-Game Quick Icon & Chat Bar -->
+        <div class="in-game-chat-bar" id="in-game-chat-bar">
+          <button class="chat-open-btn" id="btn-chat-open" title="Mở khung chat & câu mặc định">
+            💬 Chat <span class="chat-badge hidden" id="chat-badge">0</span>
+          </button>
+          <div class="quick-icons">
+            <button class="icon-btn" data-msg="👏" title="Vỗ tay">👏</button>
+            <button class="icon-btn" data-msg="😂" title="Cười">😂</button>
+            <button class="icon-btn" data-msg="🔥" title="Cháy quá">🔥</button>
+            <button class="icon-btn" data-msg="😎" title="Ngầu">😎</button>
+            <button class="icon-btn" data-msg="😭" title="Tiếc quá">😭</button>
+            <button class="icon-btn" data-msg="😡" title="Cay">😡</button>
+            <button class="icon-btn" data-msg="🎱" title="Bi-a">🎱</button>
+            <button class="icon-btn" data-msg="👍" title="Tuyệt">👍</button>
+          </div>
+        </div>
       </div>
 
       <!-- Right / Bottom Control Dock -->
@@ -104,15 +120,23 @@
 
     <!-- Quick Chat / Emote Popover -->
     <div class="chat-panel hidden" id="chat-panel">
+      <div class="chat-header">
+        <span>💬 Trò chuyện trong bàn</span>
+        <button class="btn-chat-close" id="btn-chat-close" title="Đóng">✕</button>
+      </div>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="quick-emotes">
-        <button class="emote-btn" data-msg="Đánh hay lắm! 👏">👏 Hay lắm</button>
-        <button class="emote-btn" data-msg="Ối dồi ôi 😅">😅 Ối</button>
-        <button class="emote-btn" data-msg="Cú này căng đấy 🔥">🔥 Căng</button>
-        <button class="emote-btn" data-msg="Chúc may mắn! 🎱">🎱 GLHF</button>
+        <button class="emote-btn" data-msg="Đánh hay lắm! 👏">👏 Hay lắm!</button>
+        <button class="emote-btn" data-msg="Cú này căng đấy! 🔥">🔥 Căng đấy!</button>
+        <button class="emote-btn" data-msg="Ối dồi ôi! 😅">😅 Ối dồi ôi</button>
+        <button class="emote-btn" data-msg="Hụt rồi tiếc quá! 😭">😭 Tiếc quá</button>
+        <button class="emote-btn" data-msg="Chờ xíu nhé! ⏳">⏳ Chờ xíu</button>
+        <button class="emote-btn" data-msg="Chốt hạ thôi! 😎">😎 Chốt hạ</button>
+        <button class="emote-btn" data-msg="Gà quá đi! 🐔">🐔 Gà quá</button>
+        <button class="emote-btn" data-msg="Làm ván nữa nhé! 🔄">🔄 Ván nữa</button>
       </div>
       <form class="chat-form" id="chat-form">
-        <input type="text" id="chat-input" placeholder="Nhắn cho bạn..." maxlength="80" autocomplete="off" />
+        <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." maxlength="80" autocomplete="off" />
         <button type="submit">Gửi</button>
       </form>
     </div>
