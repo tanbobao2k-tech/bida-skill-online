@@ -53,6 +53,7 @@
   const lobbyModal = document.getElementById('lobby-modal');
   const gameoverModal = document.getElementById('gameover-modal');
   const playerNameInput = document.getElementById('player-name-input');
+  const tableNameInput = document.getElementById('table-name-input');
   const roomCodeInput = document.getElementById('room-code-input');
   const onlineStatus = document.getElementById('online-status');
   const onlineStatusText = document.getElementById('online-status-text');
@@ -71,8 +72,24 @@
   const chatBadge = document.getElementById('chat-badge');
   let unreadChatCount = 0;
 
-  // Restore saved nickname
+  // Restore saved nickname & table name
   playerNameInput.value = localStorage.getItem('bida_name') || 'Cơ thủ';
+  const savedTableName = localStorage.getItem('bida_table_name') || 'Tân Vip';
+  tableNameInput.value = savedTableName;
+  applyTableName(savedTableName, false);
+
+  function applyTableName(name, save = true) {
+    const clean = (name || '').trim() || 'Tân Vip';
+    if (save) localStorage.setItem('bida_table_name', clean);
+    tableNameInput.value = clean;
+    renderer.setTableName(clean);
+    if (renderer3d) renderer3d.setTableName(clean);
+    return clean;
+  }
+
+  tableNameInput.addEventListener('input', () => {
+    applyTableName(tableNameInput.value, true);
+  });
 
   // Toast helper
   let toastTimer = null;
@@ -99,6 +116,7 @@
       net.sendRoom({
         type: 'WELCOME',
         hostName: playerNames[1],
+        tableName: renderer.tableName,
         mode: net.mode,
         balls: physics.exportState(),
       });
@@ -108,6 +126,7 @@
     onWelcome: (msg) => {
       playerNames[1] = msg.hostName || 'Chủ phòng';
       playerNames[2] = getPlayerName();
+      if (msg.tableName) applyTableName(msg.tableName, false);
       myPlayerIndex = 2;
       playType = 'online';
       rules = new PoolRules(msg.mode);
@@ -167,6 +186,9 @@
         cue.x = msg.x;
         cue.y = msg.y;
       }
+    } else if (msg.type === 'TABLE_NAME') {
+      applyTableName(msg.tableName, false);
+      showToast(`Tên bàn đã đổi thành: ${renderer.tableName}`);
     } else if (msg.type === 'CHAT') {
       appendChat(msg.name, msg.text);
       showToast(`💬 ${msg.name}: ${msg.text}`, 2400);
@@ -733,6 +755,16 @@
     const theme = renderer.cycleTheme();
     if (renderer3d) renderer3d.cycleTheme();
     showToast(`Màu bàn: ${theme.name}`);
+  });
+
+  document.getElementById('btn-table-name').addEventListener('click', () => {
+    const next = prompt('Nhập tên bàn mới (tối đa 18 ký tự):', renderer.tableName);
+    if (next === null) return;
+    const clean = applyTableName(next.slice(0, 18), true);
+    showToast(`Đã đổi tên bàn: ${clean}`);
+    if (playType === 'online') {
+      net.sendRoom({ type: 'TABLE_NAME', tableName: clean });
+    }
   });
 
   function toggleChatPanel(forceState) {

@@ -15,8 +15,13 @@ class PoolRenderer {
     this.totalW = TABLE_W + this.railSize * 2;
     this.totalH = TABLE_H + this.railSize * 2;
     this.themeIndex = 0;
+    this.tableName = 'Tân Vip';
     this.scale = 1;
     this.dpr = window.devicePixelRatio || 1;
+  }
+
+  setTableName(name) {
+    this.tableName = (name || '').trim() || 'Tân Vip';
   }
 
   cycleTheme() {
@@ -256,17 +261,17 @@ class PoolRenderer {
     ctx.textBaseline = 'middle';
     ctx.fillText('★ VIP CLUB ★', 0, -24);
 
-    // Main "Tân Vip" text embossed on the felt
+    // Main table name text embossed on the felt
     ctx.font = '800 30px "Be Vietnam Pro", sans-serif';
     ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
-    ctx.fillText('Tân Vip', 1.5, 5.5);
+    ctx.fillText(this.tableName, 1.5, 5.5);
 
     const textGrad = ctx.createLinearGradient(-55, -10, 55, 18);
     textGrad.addColorStop(0, 'rgba(253, 230, 138, 0.34)');
     textGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.38)');
     textGrad.addColorStop(1, 'rgba(245, 158, 11, 0.32)');
     ctx.fillStyle = textGrad;
-    ctx.fillText('Tân Vip', 0, 4);
+    ctx.fillText(this.tableName, 0, 4);
 
     // Subtitle
     ctx.font = '600 9.5px "JetBrains Mono", monospace';

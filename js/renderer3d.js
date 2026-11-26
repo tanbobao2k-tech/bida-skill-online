@@ -23,6 +23,7 @@ class PoolRenderer3D {
     this.cueGroup = null;
     this.feltMesh = null;
     this.themeIndex = 0;
+    this.tableName = 'Tân Vip';
     this.raycaster = new THREE.Raycaster();
     this.tablePlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -BALL_R);
 
@@ -118,9 +119,9 @@ class PoolRenderer3D {
 
     ctx.font = '800 34px "Be Vietnam Pro", sans-serif';
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
-    ctx.fillText('Tân Vip', 2, 6);
+    ctx.fillText(this.tableName, 2, 6);
     ctx.fillStyle = 'rgba(253, 230, 138, 0.48)';
-    ctx.fillText('Tân Vip', 0, 4);
+    ctx.fillText(this.tableName, 0, 4);
 
     ctx.font = '600 10px "JetBrains Mono", monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.22)';
@@ -335,6 +336,16 @@ class PoolRenderer3D {
       const hole = new THREE.Mesh(new THREE.CylinderGeometry(p.r + 2, p.r + 2, 0.3, 32), pocketMat);
       hole.position.set(wx, 0.2, wz);
       this.scene.add(hole);
+    }
+  }
+
+  setTableName(name) {
+    this.tableName = (name || '').trim() || 'Tân Vip';
+    const theme = FELT_THEMES[this.themeIndex];
+    if (this.feltMesh) {
+      this.feltMesh.material.map.dispose();
+      this.feltMesh.material.map = this.createFeltTexture(theme);
+      this.feltMesh.material.needsUpdate = true;
     }
   }
 
