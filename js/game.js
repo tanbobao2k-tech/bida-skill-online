@@ -38,6 +38,7 @@
   let turnDeadline = Date.now() + TURN_TIME_SEC * 1000;
   let lastRenderedSec = -1;
   let timeoutTriggeredForTurn = false;
+  let turnSeq = 1;
   let aimAngle = 0;
   let shotPower = 0;
   let spinX = 0;
@@ -162,6 +163,8 @@
       }
       myPlayerIndex = 2;
       playType = 'online';
+      turnSeq = 1;
+      shotWasExecutedByMe = false;
       rules = new PoolRules(msg.mode);
       rules.setupRack(physics);
       physics.importState(msg.balls);
@@ -185,21 +188,27 @@
 
   function handleNetworkMessage(msg) {
     if (msg.type === 'AIM') {
+      if (rules.turn === myPlayerIndex || physics.isMoving) return;
       aimAngle = msg.angle;
       shotPower = msg.power;
       updatePowerUI();
     } else if (msg.type === 'SHOT') {
+      if (rules.turn === myPlayerIndex) return;
       const cue = physics.getCueBall();
       if (cue && msg.cueX !== undefined) {
         cue.x = msg.cueX;
         cue.y = msg.cueY;
       }
       shotWasExecutedByMe = false;
+      timeoutTriggeredForTurn = true;
       audio.playCueStrike(msg.power);
       physics.strikeCueBall(msg.angle, msg.power, msg.spinX, msg.spinY);
       shotPower = 0;
       updatePowerUI();
     } else if (msg.type === 'SYNC_STATE') {
+      if (msg.turnSeq !== undefined && msg.turnSeq < turnSeq) return;
+      if (msg.turnSeq !== undefined) turnSeq = msg.turnSeq;
+      shotWasExecutedByMe = false;
       physics.importState(msg.balls);
       rules.turn = msg.turn;
       rules.isBreakShot = msg.isBreakShot;
@@ -239,6 +248,8 @@
         });
       }
     } else if (msg.type === 'REMATCH_START') {
+      turnSeq = 1;
+      shotWasExecutedByMe = false;
       rules.reset();
       rules.setupRack(physics);
       physics.importState(msg.balls);
@@ -286,8 +297,9 @@
   }
 
   function handleTurnTimeout() {
-    if (timeoutTriggeredForTurn) return;
+    if (timeoutTriggeredForTurn || physics.isMoving) return;
     timeoutTriggeredForTurn = true;
+    turnSeq++;
     const other = rules.turn === 1 ? 2 : 1;
     rules.turn = other;
     rules.ballInHand = true;
@@ -306,6 +318,7 @@
     if (playType === 'online') {
       net.sendRoom({
         type: 'SYNC_STATE',
+        turnSeq,
         balls: physics.exportState(),
         turn: rules.turn,
         isBreakShot: rules.isBreakShot,
@@ -332,8 +345,8 @@
     if (playType !== 'online' || rules.turn === myPlayerIndex) {
       if (left <= 0) handleTurnTimeout();
     } else {
-      // Grace period if opponent's tab is backgrounded/AFK
-      if (left <= -1.5) handleTurnTimeout();
+      // Generous 5s grace period for clock skew/network latency if opponent is AFK
+      if (left <= -5.0) handleTurnTimeout();
     }
   }
 
@@ -343,6 +356,8 @@
   function startNewMatch(mode) {
     rules = new PoolRules(mode);
     rules.setupRack(physics);
+    turnSeq = 1;
+    shotWasExecutedByMe = false;
     shotPower = 0;
     spinX = 0;
     spinY = 0;
@@ -443,6 +458,7 @@
     rules.ballInHand = false;
     bihHint.classList.add('hidden');
     shotWasExecutedByMe = true;
+    timeoutTriggeredForTurn = true;
     audio.playCueStrike(shotPower);
 
     if (playType === 'online') {
@@ -496,6 +512,8 @@
       if (wasMoving && !moving) {
         // Shot just finished!
         if (playType !== 'online' || shotWasExecutedByMe) {
+          shotWasExecutedByMe = false;
+          turnSeq++;
           const res = rules.evaluateShot(physics, physics.shotEvents);
           if (res.foul) audio.playFoul();
           showToast(res.message);
@@ -505,6 +523,7 @@
           if (playType === 'online') {
             net.sendRoom({
               type: 'SYNC_STATE',
+              turnSeq,
               balls: physics.exportState(),
               turn: rules.turn,
               isBreakShot: rules.isBreakShot,
