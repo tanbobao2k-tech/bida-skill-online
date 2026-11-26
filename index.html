@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261126b" />
+  <link rel="stylesheet" href="style.css?v=20261126c" />
   <!-- MQTT.js over WebSocket for reliable zero-NAT online multiplayer -->
   <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
   <!-- Three.js for 3D Player POV mode -->
@@ -64,21 +64,11 @@
         <div class="bih-hint hidden" id="bih-hint">
           ✋ Kéo bi cái đến vị trí muốn đặt rồi thả/nhấn để xác nhận
         </div>
-        <!-- Always-available In-Game Quick Icon & Chat Bar -->
+        <!-- Compact In-Game Chat Button (expands on click) -->
         <div class="in-game-chat-bar" id="in-game-chat-bar">
-          <button class="chat-open-btn" id="btn-chat-open" title="Mở khung chat & câu mặc định">
-            💬 Chat <span class="chat-badge hidden" id="chat-badge">0</span>
+          <button class="chat-open-btn" id="btn-chat-open" title="Mở khung chat, icon & câu mặc định">
+            💬 <span class="chat-badge hidden" id="chat-badge">0</span>
           </button>
-          <div class="quick-icons">
-            <button class="icon-btn" data-msg="👏" title="Vỗ tay">👏</button>
-            <button class="icon-btn" data-msg="😂" title="Cười">😂</button>
-            <button class="icon-btn" data-msg="🔥" title="Cháy quá">🔥</button>
-            <button class="icon-btn" data-msg="😎" title="Ngầu">😎</button>
-            <button class="icon-btn" data-msg="😭" title="Tiếc quá">😭</button>
-            <button class="icon-btn" data-msg="😡" title="Cay">😡</button>
-            <button class="icon-btn" data-msg="🎱" title="Bi-a">🎱</button>
-            <button class="icon-btn" data-msg="👍" title="Tuyệt">👍</button>
-          </div>
         </div>
       </div>
 
@@ -130,6 +120,16 @@
         <button class="btn-chat-close" id="btn-chat-close" title="Đóng">✕</button>
       </div>
       <div class="chat-messages" id="chat-messages"></div>
+      <div class="quick-icons">
+        <button class="icon-btn" data-msg="👏" title="Vỗ tay">👏</button>
+        <button class="icon-btn" data-msg="😂" title="Cười">😂</button>
+        <button class="icon-btn" data-msg="🔥" title="Cháy quá">🔥</button>
+        <button class="icon-btn" data-msg="😎" title="Ngầu">😎</button>
+        <button class="icon-btn" data-msg="😭" title="Tiếc quá">😭</button>
+        <button class="icon-btn" data-msg="😡" title="Cay">😡</button>
+        <button class="icon-btn" data-msg="🎱" title="Bi-a">🎱</button>
+        <button class="icon-btn" data-msg="👍" title="Tuyệt">👍</button>
+      </div>
       <div class="quick-emotes">
         <button class="emote-btn" data-msg="Đánh hay lắm! 👏">👏 Hay lắm!</button>
         <button class="emote-btn" data-msg="Cú này căng đấy! 🔥">🔥 Căng đấy!</button>
@@ -230,13 +230,13 @@
     </div>
   </div>
 
-  <script src="js/audio.js?v=20261126b"></script>
-  <script src="js/physics.js?v=20261126b"></script>
-  <script src="js/rules.js?v=20261126b"></script>
-  <script src="js/renderer.js?v=20261126b"></script>
-  <script src="js/renderer3d.js?v=20261126b"></script>
-  <script src="js/network.js?v=20261126b"></script>
-  <script src="js/ai.js?v=20261126b"></script>
-  <script src="js/game.js?v=20261126b"></script>
+  <script src="js/audio.js?v=20261126c"></script>
+  <script src="js/physics.js?v=20261126c"></script>
+  <script src="js/rules.js?v=20261126c"></script>
+  <script src="js/renderer.js?v=20261126c"></script>
+  <script src="js/renderer3d.js?v=20261126c"></script>
+  <script src="js/network.js?v=20261126c"></script>
+  <script src="js/ai.js?v=20261126c"></script>
+  <script src="js/game.js?v=20261126c"></script>
 </body>
 </html>
