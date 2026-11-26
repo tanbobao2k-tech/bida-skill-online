@@ -10,8 +10,20 @@
   const canvas = document.getElementById('pool-canvas');
   const canvas3d = document.getElementById('pool-canvas-3d');
   const renderer = new PoolRenderer(canvas);
-  const renderer3d = new PoolRenderer3D(canvas3d);
+  let renderer3d = null;
   let viewMode = '3d'; // '3d' (Player POV) | '2d'
+  try {
+    if (typeof THREE !== 'undefined' && typeof PoolRenderer3D !== 'undefined') {
+      renderer3d = new PoolRenderer3D(canvas3d);
+    }
+  } catch (err) {
+    console.warn('3D WebGL unavailable, falling back to 2D:', err);
+  }
+  if (!renderer3d) {
+    viewMode = '2d';
+    canvas3d.classList.add('hidden');
+    canvas.classList.remove('hidden');
+  }
   let peekTop = false;
   let lastDragX = 0;
   const ai = new PoolAI();
@@ -694,6 +706,10 @@
 
   // Tool Buttons
   document.getElementById('btn-camera-mode').addEventListener('click', (e) => {
+    if (!renderer3d) {
+      showToast('Thiết bị không hỗ trợ 3D WebGL, đang dùng 2D.');
+      return;
+    }
     viewMode = viewMode === '3d' ? '2d' : '3d';
     canvas3d.classList.toggle('hidden', viewMode !== '3d');
     canvas.classList.toggle('hidden', viewMode !== '2d');
@@ -714,7 +730,7 @@
 
   document.getElementById('btn-felt').addEventListener('click', () => {
     const theme = renderer.cycleTheme();
-    renderer3d.cycleTheme();
+    if (renderer3d) renderer3d.cycleTheme();
     showToast(`Màu bàn: ${theme.name}`);
   });
 
@@ -864,7 +880,7 @@
   function handleResize() {
     const wrapper = document.getElementById('canvas-wrapper');
     renderer.resize(wrapper.clientWidth - 12, wrapper.clientHeight - 12);
-    renderer3d.resize(wrapper.clientWidth - 12, wrapper.clientHeight - 12);
+    if (renderer3d) renderer3d.resize(wrapper.clientWidth - 12, wrapper.clientHeight - 12);
   }
   window.addEventListener('resize', handleResize);
   handleResize();

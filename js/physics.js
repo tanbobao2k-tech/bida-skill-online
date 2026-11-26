@@ -143,6 +143,7 @@ class PoolPhysics {
       // 2. Check pocket captures BEFORE rail bounce so pocketed balls drop cleanly
       for (const b of this.balls) {
         if (b.pocketed) continue;
+        let captured = false;
         for (const p of POCKETS) {
           const dist = Math.hypot(b.x - p.x, b.y - p.y);
           if (dist < p.r) {
@@ -152,7 +153,33 @@ class PoolPhysics {
             b.spinActive = false;
             this.shotEvents.pocketed.push(b.id);
             if (this.callbacks.onPocket) this.callbacks.onPocket(b, p);
+            captured = true;
             break;
+          }
+        }
+        if (captured) continue;
+
+        // Safety net: if a fast ball slipped past the rail at a pocket mouth, snap-capture to nearest pocket
+        if (b.x < -4 || b.x > TABLE_W + 4 || b.y < -4 || b.y > TABLE_H + 4) {
+          let nearest = null;
+          let minD = Infinity;
+          for (const p of POCKETS) {
+            const d = Math.hypot(b.x - p.x, b.y - p.y);
+            if (d < minD) {
+              minD = d;
+              nearest = p;
+            }
+          }
+          if (nearest && minD < 65) {
+            b.pocketed = true;
+            b.vx = 0;
+            b.vy = 0;
+            b.spinActive = false;
+            this.shotEvents.pocketed.push(b.id);
+            if (this.callbacks.onPocket) this.callbacks.onPocket(b, nearest);
+          } else {
+            b.x = Math.max(BALL_R, Math.min(TABLE_W - BALL_R, b.x));
+            b.y = Math.max(BALL_R, Math.min(TABLE_H - BALL_R, b.y));
           }
         }
       }

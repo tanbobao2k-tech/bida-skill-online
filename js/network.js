@@ -14,12 +14,19 @@ class PoolNetwork {
     this.brokers = [
       'wss://broker.emqx.io:8084/mqtt',
       'wss://broker.hivemq.com:8884/mqtt',
+      'wss://test.mosquitto.org:8081/mqtt',
     ];
     this.brokerIdx = 0;
     this.seekTimer = null;
   }
 
   connect(onReady) {
+    if (typeof mqtt === 'undefined') {
+      if (this.handlers.onError) {
+        this.handlers.onError('Chưa tải được thư viện mạng MQTT. Hãy tải lại trang!');
+      }
+      return;
+    }
     if (this.client && this.connected) {
       onReady();
       return;
@@ -30,8 +37,8 @@ class PoolNetwork {
     this.client = mqtt.connect(url, {
       clientId: this.clientId,
       clean: true,
-      connectTimeout: 6000,
-      reconnectPeriod: 3000,
+      connectTimeout: 3500,
+      reconnectPeriod: 0,
     });
 
     let calledReady = false;
@@ -41,10 +48,10 @@ class PoolNetwork {
         if (this.brokerIdx < this.brokers.length) {
           this.connect(onReady);
         } else if (this.handlers.onError) {
-          this.handlers.onError('Không thể kết nối máy chủ mạng. Vui lòng thử lại!');
+          this.handlers.onError('Không thể kết nối máy chủ mạng. Vui lòng kiểm tra mạng và thử lại!');
         }
       }
-    }, 6500);
+    }, 3800);
 
     this.client.on('connect', () => {
       clearTimeout(timeout);
@@ -83,6 +90,7 @@ class PoolNetwork {
     this.mode = mode;
     this.isHost = true;
     this.paired = false;
+    this.brokerIdx = 0;
     this.roomCode = String(Math.floor(1000 + Math.random() * 9000));
 
     this.connect(() => {
@@ -98,6 +106,7 @@ class PoolNetwork {
     this.playerName = name;
     this.isHost = false;
     this.paired = false;
+    this.brokerIdx = 0;
     this.roomCode = code.trim().toUpperCase();
 
     this.connect(() => {
@@ -114,6 +123,7 @@ class PoolNetwork {
     this.playerName = name;
     this.mode = mode;
     this.paired = false;
+    this.brokerIdx = 0;
     this.roomCode = String(Math.floor(100000 + Math.random() * 900000));
 
     this.connect(() => {
