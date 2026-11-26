@@ -132,7 +132,7 @@ class PoolRenderer3D {
 
   buildTable() {
     const theme = FELT_THEMES[this.themeIndex];
-    const feltGeo = new THREE.PlaneGeometry(TABLE_W + 16, TABLE_H + 16);
+    const feltGeo = new THREE.PlaneGeometry(TABLE_W + 4, TABLE_H + 4);
     const feltMat = new THREE.MeshStandardMaterial({
       map: this.createFeltTexture(theme),
       roughness: 0.88,
@@ -140,69 +140,83 @@ class PoolRenderer3D {
     });
     this.feltMesh = new THREE.Mesh(feltGeo, feltMat);
     this.feltMesh.rotation.x = -Math.PI / 2;
+    this.feltMesh.position.y = 0;
     this.feltMesh.receiveShadow = true;
     this.scene.add(this.feltMesh);
 
     // Table base under felt
-    const bodyGeo = new THREE.BoxGeometry(TABLE_W + 116, 48, TABLE_H + 116);
+    const bodyGeo = new THREE.BoxGeometry(TABLE_W + 124, 48, TABLE_H + 124);
     const bodyMat = new THREE.MeshStandardMaterial({ color: '#2b1307', roughness: 0.55, metalness: 0.1 });
     const body = new THREE.Mesh(bodyGeo, bodyMat);
     body.position.y = -25;
     this.scene.add(body);
 
-    // Wood Rails (4 sides)
+    // Wood Rails (4 sides) positioned cleanly outside the cushion lip (no overlap / no Z-fighting)
     const railMat = new THREE.MeshStandardMaterial({ color: '#4d220e', roughness: 0.35, metalness: 0.08 });
     const cushionMat = new THREE.MeshStandardMaterial({ color: theme.cushion, roughness: 0.8 });
 
     const railH = 26;
-    const railThick = 56;
+    const cushionThick = 12;
+    const railThick = 50;
 
-    // Top & Bottom rails
+    // Top & Bottom rails + split cushions (leaving side pocket gap)
     for (const sign of [-1, 1]) {
-      const rMesh = new THREE.Mesh(new THREE.BoxGeometry(TABLE_W + railThick * 2, railH, railThick), railMat);
-      rMesh.position.set(0, railH / 2 - 2, sign * (TABLE_H / 2 + railThick / 2));
+      const rMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(TABLE_W + (cushionThick + railThick) * 2, railH, railThick),
+        railMat
+      );
+      rMesh.position.set(0, railH / 2 - 1, sign * (TABLE_H / 2 + cushionThick + railThick / 2));
       rMesh.castShadow = true;
       rMesh.receiveShadow = true;
       this.scene.add(rMesh);
 
-      // Cushion lip
-      const cMesh = new THREE.Mesh(new THREE.BoxGeometry(TABLE_W - 24, 18, 10), cushionMat);
-      cMesh.position.set(0, 9, sign * (TABLE_H / 2 + 5));
-      this.scene.add(cMesh);
+      const segLen = TABLE_W / 2 - 58;
+      for (const sideX of [-1, 1]) {
+        const cMesh = new THREE.Mesh(new THREE.BoxGeometry(segLen, 18, cushionThick), cushionMat);
+        cMesh.position.set(sideX * (TABLE_W / 4 + 2), 9.5, sign * (TABLE_H / 2 + cushionThick / 2));
+        this.scene.add(cMesh);
+      }
     }
 
-    // Left & Right rails
+    // Left & Right rails + cushions
     for (const sign of [-1, 1]) {
-      const rMesh = new THREE.Mesh(new THREE.BoxGeometry(railThick, railH, TABLE_H), railMat);
-      rMesh.position.set(sign * (TABLE_W / 2 + railThick / 2), railH / 2 - 2, 0);
+      const rMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(railThick, railH, TABLE_H + cushionThick * 2),
+        railMat
+      );
+      rMesh.position.set(sign * (TABLE_W / 2 + cushionThick + railThick / 2), railH / 2 - 1, 0);
       rMesh.castShadow = true;
       rMesh.receiveShadow = true;
       this.scene.add(rMesh);
 
-      const cMesh = new THREE.Mesh(new THREE.BoxGeometry(10, 18, TABLE_H - 24), cushionMat);
-      cMesh.position.set(sign * (TABLE_W / 2 + 5), 9, 0);
+      const cMesh = new THREE.Mesh(new THREE.BoxGeometry(cushionThick, 18, TABLE_H - 64), cushionMat);
+      cMesh.position.set(sign * (TABLE_W / 2 + cushionThick / 2), 9.5, 0);
       this.scene.add(cMesh);
     }
 
-    // Brass Corner Plates
+    // Brass Corner Plates (raised 1 unit above rail to avoid Z-fighting)
     const brassMat = new THREE.MeshStandardMaterial({ color: '#d4af37', roughness: 0.25, metalness: 0.85 });
     for (const sx of [-1, 1]) {
       for (const sz of [-1, 1]) {
-        const cap = new THREE.Mesh(new THREE.BoxGeometry(58, railH + 2, 58), brassMat);
-        cap.position.set(sx * (TABLE_W / 2 + 28), railH / 2 - 1, sz * (TABLE_H / 2 + 28));
+        const cap = new THREE.Mesh(new THREE.BoxGeometry(54, railH + 2, 54), brassMat);
+        cap.position.set(
+          sx * (TABLE_W / 2 + cushionThick + railThick / 2),
+          railH / 2,
+          sz * (TABLE_H / 2 + cushionThick + railThick / 2)
+        );
         this.scene.add(cap);
       }
     }
 
     // Diamond Sights
     const diamondMat = new THREE.MeshStandardMaterial({ color: '#fef3c7', roughness: 0.2, metalness: 0.3 });
-    const dGeo = new THREE.BoxGeometry(6, 2, 6);
+    const dGeo = new THREE.BoxGeometry(6, 1.5, 6);
     for (let i = 1; i <= 7; i++) {
       if (i === 4) continue;
       const wx = (TABLE_W / 8) * i - TABLE_W / 2;
       for (const sz of [-1, 1]) {
         const d = new THREE.Mesh(dGeo, diamondMat);
-        d.position.set(wx, railH - 1, sz * (TABLE_H / 2 + 28));
+        d.position.set(wx, railH - 0.3, sz * (TABLE_H / 2 + cushionThick + railThick / 2));
         d.rotation.y = Math.PI / 4;
         this.scene.add(d);
       }
@@ -211,18 +225,23 @@ class PoolRenderer3D {
       const wz = (TABLE_H / 4) * i - TABLE_H / 2;
       for (const sx of [-1, 1]) {
         const d = new THREE.Mesh(dGeo, diamondMat);
-        d.position.set(sx * (TABLE_W / 2 + 28), railH - 1, wz);
+        d.position.set(sx * (TABLE_W / 2 + cushionThick + railThick / 2), railH - 0.3, wz);
         d.rotation.y = Math.PI / 4;
         this.scene.add(d);
       }
     }
 
-    // 6 Pockets
+    // 6 Pockets cleanly above felt (no Z-fighting)
+    const rimMat = new THREE.MeshStandardMaterial({ color: '#1b0d06', roughness: 0.7 });
     const pocketMat = new THREE.MeshBasicMaterial({ color: '#030508' });
     for (const p of POCKETS) {
-      const pMesh = new THREE.Mesh(new THREE.CylinderGeometry(p.r, p.r * 0.85, 6, 24), pocketMat);
-      pMesh.position.set(this.toWorldX(p.x), -2.2, this.toWorldZ(p.y));
-      this.scene.add(pMesh);
+      const wx = this.toWorldX(p.x);
+      const wz = this.toWorldZ(p.y);
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(p.r + 5, p.r + 5, 0.8, 24), rimMat);
+      rim.position.set(wx, 0.4, wz);
+      const hole = new THREE.Mesh(new THREE.CylinderGeometry(p.r, p.r * 0.85, 1.2, 24), pocketMat);
+      hole.position.set(wx, 0.7, wz);
+      this.scene.add(rim, hole);
     }
   }
 
@@ -404,9 +423,9 @@ class PoolRenderer3D {
       desiredPos.set(cx - dirX * 225, 138, cz - dirZ * 225);
       desiredTarget.set(cx + dirX * 230, 12, cz + dirZ * 230);
     } else {
-      // Angled overhead broadcast view
-      desiredPos.set(0, 690, 420);
-      desiredTarget.set(0, 0, 20);
+      // Angled overhead broadcast view showing full table cleanly
+      desiredPos.set(0, 770, 480);
+      desiredTarget.set(0, 0, 10);
     }
 
     const lerpRate = aimState.peekTop ? 0.16 : 0.11;
