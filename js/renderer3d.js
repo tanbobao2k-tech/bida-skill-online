@@ -540,7 +540,7 @@ class PoolRenderer3D {
     const desiredPos = new THREE.Vector3();
     const desiredTarget = new THREE.Vector3();
 
-    if (showCue && !aimState.ballInHand && !aimState.peekTop) {
+    if (showCue && !aimState.isPlacingCue && !aimState.peekTop) {
       const dirX = Math.cos(aimState.angle);
       const dirZ = Math.sin(aimState.angle);
       const cx = this.toWorldX(cue.x);

@@ -483,6 +483,7 @@
       angle: aimAngle,
       power: shotPower,
       ballInHand: rules.ballInHand && isMyTurn(),
+      isPlacingCue,
       peekTop,
     });
 
