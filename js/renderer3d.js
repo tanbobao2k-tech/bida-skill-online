@@ -326,48 +326,15 @@ class PoolRenderer3D {
     const pocketTex = new THREE.CanvasTexture(pCanvas);
 
     const pocketMat = new THREE.MeshBasicMaterial({ map: pocketTex, transparent: true });
-    const collarMat = new THREE.MeshStandardMaterial({ color: '#1f120b', roughness: 0.65, metalness: 0.1 });
-    const ringMat = new THREE.MeshStandardMaterial({ color: '#c59b47', roughness: 0.3, metalness: 0.8 });
 
     for (const p of POCKETS) {
       const wx = this.toWorldX(p.x);
       const wz = this.toWorldZ(p.y);
 
-      // Deep gradient pocket opening
-      const hole = new THREE.Mesh(new THREE.CylinderGeometry(p.r + 2, p.r + 2, 0.6, 32), pocketMat);
-      hole.position.set(wx, 0.45, wz);
+      // Flush drop-pocket opening (completely flat with the felt, no raised bump in front)
+      const hole = new THREE.Mesh(new THREE.CylinderGeometry(p.r + 2, p.r + 2, 0.3, 32), pocketMat);
+      hole.position.set(wx, 0.2, wz);
       this.scene.add(hole);
-
-      // Leather & brass pocket surround ring
-      const collar = new THREE.Mesh(
-        new THREE.TorusGeometry(p.r + 2.5, 3.2, 10, 32),
-        collarMat
-      );
-      collar.rotation.x = Math.PI / 2;
-      collar.position.set(wx, 1.8, wz);
-      this.scene.add(collar);
-
-      if (p.type === 'side') {
-        const trim = new THREE.Mesh(
-          new THREE.TorusGeometry(p.r + 5.2, 1.0, 8, 28, Math.PI),
-          ringMat
-        );
-        trim.rotation.x = Math.PI / 2;
-        trim.rotation.z = p.y < TABLE_H / 2 ? Math.PI : 0;
-        trim.position.set(wx, 2.2, wz);
-        this.scene.add(trim);
-      } else {
-        // Corner pocket brass outer arc
-        const angleToCenter = Math.atan2(-wz, -wx);
-        const trim = new THREE.Mesh(
-          new THREE.TorusGeometry(p.r + 5.0, 1.1, 8, 28, Math.PI * 1.1),
-          ringMat
-        );
-        trim.rotation.x = Math.PI / 2;
-        trim.rotation.z = angleToCenter + Math.PI * 0.45;
-        trim.position.set(wx, 2.2, wz);
-        this.scene.add(trim);
-      }
     }
   }
 
