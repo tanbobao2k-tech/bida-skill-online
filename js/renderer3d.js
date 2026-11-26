@@ -132,12 +132,65 @@ class PoolRenderer3D {
     return tex;
   }
 
+  createWoodTexture() {
+    const c = document.createElement('canvas');
+    c.width = 512;
+    c.height = 128;
+    const ctx = c.getContext('2d');
+
+    const grad = ctx.createLinearGradient(0, 0, 512, 0);
+    grad.addColorStop(0, '#5a2811');
+    grad.addColorStop(0.5, '#6e3216');
+    grad.addColorStop(1, '#4a1f0c');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 512, 128);
+
+    // Subtle mahogany wood grain streaks
+    for (let i = 0; i < 45; i++) {
+      ctx.strokeStyle = i % 2 === 0 ? 'rgba(30, 10, 2, 0.18)' : 'rgba(180, 105, 55, 0.12)';
+      ctx.lineWidth = 1 + (i % 3);
+      ctx.beginPath();
+      const y = (i / 45) * 128;
+      ctx.moveTo(0, y);
+      ctx.bezierCurveTo(170, y + ((i % 5) - 2) * 4, 340, y - ((i % 4) - 1.5) * 4, 512, y);
+      ctx.stroke();
+    }
+
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    return tex;
+  }
+
+  createBeveledBlock(w, h, d, bevel = 3.5) {
+    const bw = Math.max(2, w - bevel * 2);
+    const bd = Math.max(2, d - bevel * 2);
+    const shape = new THREE.Shape();
+    shape.moveTo(-bw / 2, -bd / 2);
+    shape.lineTo(bw / 2, -bd / 2);
+    shape.lineTo(bw / 2, bd / 2);
+    shape.lineTo(-bw / 2, bd / 2);
+    shape.closePath();
+
+    const geo = new THREE.ExtrudeGeometry(shape, {
+      depth: Math.max(2, h - bevel * 2),
+      bevelEnabled: true,
+      bevelSegments: 4,
+      steps: 1,
+      bevelSize: bevel,
+      bevelThickness: bevel,
+    });
+    geo.center();
+    geo.rotateX(Math.PI / 2);
+    return geo;
+  }
+
   buildTable() {
     const theme = FELT_THEMES[this.themeIndex];
-    const feltGeo = new THREE.PlaneGeometry(TABLE_W + 4, TABLE_H + 4);
+    const feltGeo = new THREE.PlaneGeometry(TABLE_W + 6, TABLE_H + 6);
     const feltMat = new THREE.MeshStandardMaterial({
       map: this.createFeltTexture(theme),
-      roughness: 0.88,
+      roughness: 0.86,
       metalness: 0.02,
     });
     this.feltMesh = new THREE.Mesh(feltGeo, feltMat);
@@ -146,72 +199,88 @@ class PoolRenderer3D {
     this.feltMesh.receiveShadow = true;
     this.scene.add(this.feltMesh);
 
-    // Table base under felt
-    const bodyGeo = new THREE.BoxGeometry(TABLE_W + 124, 48, TABLE_H + 124);
-    const bodyMat = new THREE.MeshStandardMaterial({ color: '#2b1307', roughness: 0.55, metalness: 0.1 });
+    // Table skirt / apron underneath with subtle gold trim
+    const bodyGeo = this.createBeveledBlock(TABLE_W + 116, 46, TABLE_H + 116, 6);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: '#241006', roughness: 0.45, metalness: 0.12 });
     const body = new THREE.Mesh(bodyGeo, bodyMat);
-    body.position.y = -25;
+    body.position.y = -24;
     this.scene.add(body);
 
-    // Wood Rails & Cushions with clean pocket cutouts (no rail clipping through pockets!)
-    const railMat = new THREE.MeshStandardMaterial({ color: '#522510', roughness: 0.35, metalness: 0.08 });
-    const cushionMat = new THREE.MeshStandardMaterial({ color: theme.cushion, roughness: 0.78 });
+    const trimSkirt = new THREE.Mesh(
+      new THREE.BoxGeometry(TABLE_W + 120, 3, TABLE_H + 120),
+      new THREE.MeshStandardMaterial({ color: '#c59b47', roughness: 0.3, metalness: 0.8 })
+    );
+    trimSkirt.position.y = -4;
+    this.scene.add(trimSkirt);
+
+    // Rounded / Beveled Mahogany Wood Rails & Cushions
+    const railMat = new THREE.MeshStandardMaterial({
+      map: this.createWoodTexture(),
+      roughness: 0.24,
+      metalness: 0.08,
+    });
+    const cushionMat = new THREE.MeshStandardMaterial({ color: theme.cushion, roughness: 0.76 });
 
     const railH = 24;
     const cushionThick = 12;
     const railThick = 48;
 
-    // Top & Bottom: 2 rail segments + 2 cushion segments per side (cleanly leaving side pocket at x=0 and corner pockets open)
+    // Top & Bottom: 2 rounded rail segments + 2 beveled cushion segments per side
     const topSegLen = TABLE_W / 2 - 58;
+    const topRailGeo = this.createBeveledBlock(topSegLen, railH, railThick, 4);
+    const topCushionGeo = this.createBeveledBlock(topSegLen, 18, cushionThick, 2.2);
+
     for (const signZ of [-1, 1]) {
       for (const sideX of [-1, 1]) {
         const cx = sideX * (TABLE_W / 4 + 2);
-        const rMesh = new THREE.Mesh(new THREE.BoxGeometry(topSegLen, railH, railThick), railMat);
+        const rMesh = new THREE.Mesh(topRailGeo, railMat);
         rMesh.position.set(cx, railH / 2, signZ * (TABLE_H / 2 + cushionThick + railThick / 2));
         rMesh.castShadow = true;
         rMesh.receiveShadow = true;
         this.scene.add(rMesh);
 
-        const cMesh = new THREE.Mesh(new THREE.BoxGeometry(topSegLen, 18, cushionThick), cushionMat);
+        const cMesh = new THREE.Mesh(topCushionGeo, cushionMat);
         cMesh.position.set(cx, 9.5, signZ * (TABLE_H / 2 + cushionThick / 2));
         this.scene.add(cMesh);
       }
     }
 
-    // Left & Right rails + cushions (stopping cleanly before corner pockets)
+    // Left & Right rounded rails + beveled cushions
     const sideSegLen = TABLE_H - 72;
+    const sideRailGeo = this.createBeveledBlock(railThick, railH, sideSegLen, 4);
+    const sideCushionGeo = this.createBeveledBlock(cushionThick, 18, sideSegLen, 2.2);
+
     for (const signX of [-1, 1]) {
-      const rMesh = new THREE.Mesh(new THREE.BoxGeometry(railThick, railH, sideSegLen), railMat);
+      const rMesh = new THREE.Mesh(sideRailGeo, railMat);
       rMesh.position.set(signX * (TABLE_W / 2 + cushionThick + railThick / 2), railH / 2, 0);
       rMesh.castShadow = true;
       rMesh.receiveShadow = true;
       this.scene.add(rMesh);
 
-      const cMesh = new THREE.Mesh(new THREE.BoxGeometry(cushionThick, 18, sideSegLen), cushionMat);
+      const cMesh = new THREE.Mesh(sideCushionGeo, cushionMat);
       cMesh.position.set(signX * (TABLE_W / 2 + cushionThick / 2), 9.5, 0);
       this.scene.add(cMesh);
     }
 
-    // Corner Pocket Hoods (outer brass + leather arch wrapping behind the corner pocket without clipping it)
-    const brassMat = new THREE.MeshStandardMaterial({ color: '#d4af37', roughness: 0.28, metalness: 0.85 });
-    const leatherMat = new THREE.MeshStandardMaterial({ color: '#1b0f09', roughness: 0.65, metalness: 0.1 });
+    // Corner Pocket Hoods (smooth rounded brass + leather castings)
+    const brassMat = new THREE.MeshStandardMaterial({ color: '#d4af37', roughness: 0.25, metalness: 0.85 });
+    const leatherMat = new THREE.MeshStandardMaterial({ color: '#1b0f09', roughness: 0.6, metalness: 0.1 });
     for (const sx of [-1, 1]) {
       for (const sz of [-1, 1]) {
         const px = sx * (TABLE_W / 2 - 4);
         const pz = sz * (TABLE_H / 2 - 4);
-        // Outer curved corner block behind the pocket
-        const hood = new THREE.Mesh(
-          new THREE.CylinderGeometry(36, 36, railH, 24, 1, false, 0, Math.PI * 2),
-          brassMat
-        );
+        const hood = new THREE.Mesh(new THREE.CylinderGeometry(35, 36, railH - 1, 28), brassMat);
         hood.position.set(px + sx * 28, railH / 2, pz + sz * 28);
-        this.scene.add(hood);
+        const capTop = new THREE.Mesh(new THREE.CylinderGeometry(31, 35, 3, 28), leatherMat);
+        capTop.position.set(px + sx * 28, railH + 0.5, pz + sz * 28);
+        this.scene.add(hood, capTop);
       }
     }
 
-    // Side Pocket Outer Leather Bridges (behind side pockets so no gap in rail)
+    // Side Pocket Rounded Leather Bridges
+    const sideBridgeGeo = this.createBeveledBlock(62, railH, 28, 4);
     for (const sz of [-1, 1]) {
-      const bridge = new THREE.Mesh(new THREE.BoxGeometry(62, railH, 28), leatherMat);
+      const bridge = new THREE.Mesh(sideBridgeGeo, leatherMat);
       bridge.position.set(0, railH / 2, sz * (TABLE_H / 2 + cushionThick + railThick - 12));
       this.scene.add(bridge);
     }
