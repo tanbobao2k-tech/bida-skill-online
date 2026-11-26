@@ -337,7 +337,13 @@
     }
 
     // Ball-in-hand banner
-    bihHint.classList.toggle('hidden', !(rules.ballInHand && isMyTurn()));
+    const showBih = rules.ballInHand && isMyTurn();
+    bihHint.classList.toggle('hidden', !showBih);
+    if (showBih) {
+      bihHint.textContent = rules.isBreakShot
+        ? '✋ Phá bi: Kéo bi cái trong vùng sau vạch trắng để chọn vị trí'
+        : '✋ Đặt bi: Kéo bi cái đến vị trí muốn đặt trên bàn';
+    }
   }
 
   function renderMiniBalls(elId, ids) {
@@ -483,7 +489,8 @@
 
   // Canvas Input (Aiming & Ball-in-Hand)
   function isValidCuePos(x, y) {
-    if (x < BALL_R + 2 || x > TABLE_W - BALL_R - 2 || y < BALL_R + 2 || y > TABLE_H - BALL_R - 2) {
+    const maxX = rules.isBreakShot ? TABLE_W * 0.25 : TABLE_W - BALL_R - 2;
+    if (x < BALL_R + 2 || x > maxX || y < BALL_R + 2 || y > TABLE_H - BALL_R - 2) {
       return false;
     }
     for (const b of physics.balls) {
@@ -499,16 +506,8 @@
     const cue = physics.getCueBall();
     if (!cue) return;
 
-    if (rules.ballInHand && Math.hypot(pt.x - cue.x, pt.y - cue.y) < BALL_R * 2.2) {
+    if (rules.ballInHand && Math.hypot(pt.x - cue.x, pt.y - cue.y) < BALL_R * 2.5) {
       isPlacingCue = true;
-      return;
-    }
-    if (rules.ballInHand && isValidCuePos(pt.x, pt.y)) {
-      cue.x = pt.x;
-      cue.y = pt.y;
-      rules.ballInHand = false;
-      bihHint.classList.add('hidden');
-      if (playType === 'online') net.sendRoom({ type: 'BIH_MOVE', x: cue.x, y: cue.y });
       return;
     }
 
@@ -523,7 +522,8 @@
     if (!cue) return;
 
     if (isPlacingCue) {
-      const clampedX = Math.max(BALL_R + 2, Math.min(TABLE_W - BALL_R - 2, pt.x));
+      const maxX = rules.isBreakShot ? TABLE_W * 0.25 : TABLE_W - BALL_R - 2;
+      const clampedX = Math.max(BALL_R + 2, Math.min(maxX, pt.x));
       const clampedY = Math.max(BALL_R + 2, Math.min(TABLE_H - BALL_R - 2, pt.y));
       if (isValidCuePos(clampedX, clampedY)) {
         cue.x = clampedX;
@@ -539,11 +539,7 @@
   }
 
   function onCanvasUp() {
-    if (isPlacingCue) {
-      isPlacingCue = false;
-      rules.ballInHand = false;
-      bihHint.classList.add('hidden');
-    }
+    isPlacingCue = false;
     isAimDragging = false;
   }
 

@@ -9,7 +9,7 @@ class PoolRules {
   reset() {
     this.turn = 1; // 1 or 2
     this.isBreakShot = true;
-    this.ballInHand = false;
+    this.ballInHand = true; // Allow placing cue ball behind head string on break
     this.groups = { 1: null, 2: null }; // 'solid' | 'stripe' for 8ball
     this.pocketedBy = { 1: [], 2: [] };
     this.winner = null;
