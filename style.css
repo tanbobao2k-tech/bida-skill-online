@@ -276,7 +276,7 @@ body {
   min-height: 0;
 }
 
-#pool-canvas {
+#pool-canvas, #pool-canvas-3d {
   display: block;
   max-width: 100%;
   max-height: 100%;

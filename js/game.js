@@ -8,7 +8,12 @@
     onPocket: () => audio.playPocket(),
   });
   const canvas = document.getElementById('pool-canvas');
+  const canvas3d = document.getElementById('pool-canvas-3d');
   const renderer = new PoolRenderer(canvas);
+  const renderer3d = new PoolRenderer3D(canvas3d);
+  let viewMode = '3d'; // '3d' (Player POV) | '2d'
+  let peekTop = false;
+  let lastDragX = 0;
   const ai = new PoolAI();
 
   let rules = new PoolRules('8ball');
@@ -460,11 +465,13 @@
     checkTurnClock();
 
     const showCue = !moving && !rules.winner && !isPlacingCue;
-    renderer.render(physics, {
+    const activeRenderer = viewMode === '3d' ? renderer3d : renderer;
+    activeRenderer.render(physics, {
       showCue,
       angle: aimAngle,
       power: shotPower,
       ballInHand: rules.ballInHand && isMyTurn(),
+      peekTop,
     });
 
     requestAnimationFrame(loop);
@@ -500,28 +507,35 @@
     return true;
   }
 
+  function getActiveRenderer() {
+    return viewMode === '3d' ? renderer3d : renderer;
+  }
+
   function onCanvasDown(e) {
     if (!isMyTurn()) return;
-    const pt = renderer.clientToTable(e.clientX, e.clientY);
+    const pt = getActiveRenderer().clientToTable(e.clientX, e.clientY);
     const cue = physics.getCueBall();
     if (!cue) return;
 
-    if (rules.ballInHand && Math.hypot(pt.x - cue.x, pt.y - cue.y) < BALL_R * 2.5) {
+    if (rules.ballInHand && Math.hypot(pt.x - cue.x, pt.y - cue.y) < BALL_R * 2.8) {
       isPlacingCue = true;
       return;
     }
 
     isAimDragging = true;
-    updateAimFromPoint(pt, e.shiftKey);
+    lastDragX = e.clientX;
+    if (viewMode === '2d') {
+      updateAimFromPoint(pt, e.shiftKey);
+    }
   }
 
   function onCanvasMove(e) {
     if (!isMyTurn()) return;
-    const pt = renderer.clientToTable(e.clientX, e.clientY);
     const cue = physics.getCueBall();
     if (!cue) return;
 
     if (isPlacingCue) {
+      const pt = getActiveRenderer().clientToTable(e.clientX, e.clientY);
       const maxX = rules.isBreakShot ? TABLE_W * 0.25 : TABLE_W - BALL_R - 2;
       const clampedX = Math.max(BALL_R + 2, Math.min(maxX, pt.x));
       const clampedY = Math.max(BALL_R + 2, Math.min(TABLE_H - BALL_R - 2, pt.y));
@@ -534,7 +548,15 @@
     }
 
     if (isAimDragging) {
-      updateAimFromPoint(pt, e.shiftKey);
+      if (viewMode === '3d') {
+        const dx = e.clientX - lastDragX;
+        lastDragX = e.clientX;
+        aimAngle += dx * (e.shiftKey ? 0.0012 : 0.0042);
+        syncAimOverNetwork();
+      } else {
+        const pt = renderer.clientToTable(e.clientX, e.clientY);
+        updateAimFromPoint(pt, e.shiftKey);
+      }
     }
   }
 
@@ -568,12 +590,14 @@
     }
   }
 
-  canvas.addEventListener('pointerdown', (e) => {
-    canvas.setPointerCapture(e.pointerId);
-    onCanvasDown(e);
-  });
-  canvas.addEventListener('pointermove', onCanvasMove);
-  canvas.addEventListener('pointerup', onCanvasUp);
+  for (const c of [canvas, canvas3d]) {
+    c.addEventListener('pointerdown', (e) => {
+      c.setPointerCapture(e.pointerId);
+      onCanvasDown(e);
+    });
+    c.addEventListener('pointermove', onCanvasMove);
+    c.addEventListener('pointerup', onCanvasUp);
+  }
 
   // Power Bar Input
   function updatePowerUI() {
@@ -669,6 +693,20 @@
   });
 
   // Tool Buttons
+  document.getElementById('btn-camera-mode').addEventListener('click', (e) => {
+    viewMode = viewMode === '3d' ? '2d' : '3d';
+    canvas3d.classList.toggle('hidden', viewMode !== '3d');
+    canvas.classList.toggle('hidden', viewMode !== '2d');
+    e.currentTarget.textContent = viewMode === '3d' ? '🎥 Góc nhìn: 3D' : '📐 Góc nhìn: 2D';
+    handleResize();
+    showToast(viewMode === '3d' ? 'Đã bật góc nhìn 3D POV!' : 'Đã chuyển góc nhìn 2D!');
+  });
+
+  const btnPeekTop = document.getElementById('btn-peek-top');
+  btnPeekTop.addEventListener('pointerdown', () => (peekTop = true));
+  btnPeekTop.addEventListener('pointerup', () => (peekTop = false));
+  btnPeekTop.addEventListener('pointerleave', () => (peekTop = false));
+
   document.getElementById('btn-sound').addEventListener('click', (e) => {
     const muted = audio.toggleMute();
     e.currentTarget.textContent = muted ? '🔇 Tắt tiếng' : '🔊 Âm thanh';
@@ -676,6 +714,7 @@
 
   document.getElementById('btn-felt').addEventListener('click', () => {
     const theme = renderer.cycleTheme();
+    renderer3d.cycleTheme();
     showToast(`Màu bàn: ${theme.name}`);
   });
 
@@ -825,6 +864,7 @@
   function handleResize() {
     const wrapper = document.getElementById('canvas-wrapper');
     renderer.resize(wrapper.clientWidth - 12, wrapper.clientHeight - 12);
+    renderer3d.resize(wrapper.clientWidth - 12, wrapper.clientHeight - 12);
   }
   window.addEventListener('resize', handleResize);
   handleResize();

@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="style.css" />
   <!-- MQTT.js over WebSocket for reliable zero-NAT online multiplayer -->
   <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+  <!-- Three.js for 3D Player POV mode -->
+  <script src="https://unpkg.com/three@0.169.0/build/three.min.js"></script>
 </head>
 <body>
   <div id="app">
@@ -54,7 +56,8 @@
     <!-- Main Table Area -->
     <main class="table-stage">
       <div class="canvas-wrapper" id="canvas-wrapper">
-        <canvas id="pool-canvas"></canvas>
+        <canvas id="pool-canvas" class="hidden"></canvas>
+        <canvas id="pool-canvas-3d"></canvas>
         <!-- Toast / Notification Overlay -->
         <div class="toast-banner hidden" id="toast-banner"></div>
         <!-- Ball-in-hand hint -->
@@ -109,6 +112,8 @@
             <button class="btn-nudge" id="btn-aim-right" title="Xoay phải nhẹ (Phím D / →)">►</button>
           </div>
           <div class="tool-buttons">
+            <button class="btn-tool" id="btn-camera-mode" title="Đổi góc nhìn 3D POV / 2D">🎥 Góc nhìn: 3D</button>
+            <button class="btn-tool" id="btn-peek-top" title="Giữ để nhìn toàn bàn từ trên">👁️ Soi toàn bàn</button>
             <button class="btn-tool" id="btn-sound" title="Bật/Tắt âm thanh">🔊 Âm thanh</button>
             <button class="btn-tool" id="btn-felt" title="Đổi màu nỉ bàn">🎨 Màu bàn</button>
             <button class="btn-tool" id="btn-chat-toggle" title="Nhắn nhanh">💬 Chat</button>
@@ -229,6 +234,7 @@
   <script src="js/physics.js"></script>
   <script src="js/rules.js"></script>
   <script src="js/renderer.js"></script>
+  <script src="js/renderer3d.js"></script>
   <script src="js/network.js"></script>
   <script src="js/ai.js"></script>
   <script src="js/game.js"></script>
