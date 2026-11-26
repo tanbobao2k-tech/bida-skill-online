@@ -328,7 +328,7 @@
         if (res.gameOver) {
           showGameOver();
         } else if (playType === 'ai' && rules.turn === 2) {
-          setTimeout(runAITurn, 900);
+          setTimeout(runAITurn, 450);
         }
       }
     }
