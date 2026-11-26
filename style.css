@@ -187,10 +187,45 @@ body {
   border-radius: 99px;
 }
 
+.turn-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .turn-status {
   font-size: 13px;
   font-weight: 700;
   color: var(--text-main);
+}
+
+.turn-timer {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.turn-timer.warning {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #fbbf24;
+}
+
+.turn-timer.danger {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: rgba(239, 68, 68, 0.65);
+  color: #fca5a5;
+  animation: pulseTimer 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes pulseTimer {
+  from { transform: scale(1); }
+  to { transform: scale(1.07); }
 }
 
 .room-pill {

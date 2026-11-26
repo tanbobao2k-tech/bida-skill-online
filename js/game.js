@@ -17,6 +17,9 @@
   let playerNames = { 1: 'Bạn', 2: 'Người chơi 2' };
 
   // Aim & Shot State
+  const TURN_TIME_SEC = 30; // Standard tournament 30s shot clock
+  let turnTimeLeft = TURN_TIME_SEC;
+  let lastRenderedSec = -1;
   let aimAngle = 0;
   let shotPower = 0;
   let spinX = 0;
@@ -92,6 +95,7 @@
       physics.importState(msg.balls);
       lobbyModal.classList.add('hidden');
       onlineStatus.classList.add('hidden');
+      resetTurnTimer();
       updateHUD();
       showToast(`Đã ghép cặp với ${playerNames[1]}!`);
     },
@@ -134,6 +138,7 @@
       rules.winner = msg.winner;
       rules.winReason = msg.winReason;
       if (msg.toast) showToast(msg.toast);
+      resetTurnTimer();
       updateHUD();
       if (rules.winner) showGameOver();
     } else if (msg.type === 'BIH_MOVE') {
@@ -158,6 +163,7 @@
       rules.setupRack(physics);
       physics.importState(msg.balls);
       gameoverModal.classList.add('hidden');
+      resetTurnTimer();
       updateHUD();
       showToast('Bắt đầu ván mới!');
     }
@@ -172,6 +178,63 @@
     return true;
   }
 
+  function resetTurnTimer() {
+    turnTimeLeft = TURN_TIME_SEC;
+    lastRenderedSec = -1;
+    updateTimerUI();
+  }
+
+  function updateTimerUI() {
+    const el = document.getElementById('turn-timer');
+    if (!el) return;
+    if (rules.mode === 'practice' || rules.winner) {
+      el.classList.add('hidden');
+      return;
+    }
+    el.classList.remove('hidden');
+    const sec = Math.max(0, Math.ceil(turnTimeLeft));
+    if (sec === lastRenderedSec) return;
+    lastRenderedSec = sec;
+    el.textContent = `⏱ ${sec}s`;
+    el.classList.toggle('warning', sec <= 10 && sec > 5);
+    el.classList.toggle('danger', sec <= 5);
+  }
+
+  function handleTurnTimeout() {
+    const other = rules.turn === 1 ? 2 : 1;
+    rules.turn = other;
+    rules.ballInHand = true;
+    rules.isBreakShot = false;
+    shotPower = 0;
+    isAimDragging = false;
+    isPowerDragging = false;
+    isPlacingCue = false;
+    updatePowerUI();
+    audio.playFoul();
+    const msg = `⏰ Hết giờ (${TURN_TIME_SEC}s)! Đối thủ được đặt bi.`;
+    showToast(msg);
+    resetTurnTimer();
+    updateHUD();
+
+    if (playType === 'online') {
+      net.sendRoom({
+        type: 'SYNC_STATE',
+        balls: physics.exportState(),
+        turn: rules.turn,
+        isBreakShot: rules.isBreakShot,
+        ballInHand: rules.ballInHand,
+        groups: rules.groups,
+        tableOpen: rules.tableOpen,
+        pocketedBy: rules.pocketedBy,
+        winner: rules.winner,
+        winReason: rules.winReason,
+        toast: msg,
+      });
+    } else if (playType === 'ai' && rules.turn === 2) {
+      setTimeout(runAITurn, 300);
+    }
+  }
+
   function startNewMatch(mode) {
     rules = new PoolRules(mode);
     rules.setupRack(physics);
@@ -180,6 +243,7 @@
     spinY = 0;
     updateSpinUI();
     updatePowerUI();
+    resetTurnTimer();
     gameoverModal.classList.add('hidden');
     updateHUD();
   }
@@ -324,6 +388,7 @@
           const res = rules.evaluateShot(physics, physics.shotEvents);
           if (res.foul) audio.playFoul();
           showToast(res.message);
+          resetTurnTimer();
           updateHUD();
 
           if (playType === 'online') {
@@ -350,6 +415,19 @@
         }
       }
       wasMoving = moving;
+    }
+
+    // Update 30s turn shot clock when table is idle in an active match
+    if (!moving && !rules.winner && rules.mode !== 'practice' && lobbyModal.classList.contains('hidden')) {
+      turnTimeLeft -= elapsed / 1000;
+      updateTimerUI();
+      if (turnTimeLeft <= 0) {
+        if (playType !== 'online' || rules.turn === myPlayerIndex) {
+          handleTurnTimeout();
+        } else {
+          turnTimeLeft = 0;
+        }
+      }
     }
 
     const showCue = !moving && !rules.winner && !isPlacingCue;
