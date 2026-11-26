@@ -1,17 +1,17 @@
-// HTML5 Canvas Renderer for Pro Pool Table & Balls
+// HTML5 Canvas Renderer for Pro VIP Pool Table & Balls
 // STRICTLY NO AIMING GUIDELINE — Pure skill!
 
 const FELT_THEMES = [
-  { name: 'Xanh Lục Cổ Điển', main: '#0f6b43', edge: '#09452b', cushion: '#0b5233' },
-  { name: 'Xanh Dương Giải Đấu', main: '#16528e', edge: '#0d345c', cushion: '#114173' },
-  { name: 'Đỏ Rượu Vang', main: '#7a1c28', edge: '#4d1018', cushion: '#61151f' },
+  { name: 'Xanh Lục Hoàng Gia', main: '#0f7449', mid: '#0b5c39', edge: '#063822', cushion: '#094a2e' },
+  { name: 'Xanh Dương Giải Đấu', main: '#185b9c', mid: '#12477a', edge: '#0a2a4a', cushion: '#0e3963' },
+  { name: 'Đỏ Nhung VIP', main: '#851e2c', mid: '#63141f', edge: '#3b0910', cushion: '#500f18' },
 ];
 
 class PoolRenderer {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.railSize = 54; // Wood rail thickness in logical units
+    this.railSize = 56;
     this.totalW = TABLE_W + this.railSize * 2;
     this.totalH = TABLE_H + this.railSize * 2;
     this.themeIndex = 0;
@@ -43,7 +43,6 @@ class PoolRenderer {
     this.scale = w / this.totalW;
   }
 
-  // Convert client mouse/touch coordinates to logical table coordinates (0..TABLE_W, 0..TABLE_H)
   clientToTable(clientX, clientY) {
     const rect = this.canvas.getBoundingClientRect();
     const x = (clientX - rect.left) / this.scale - this.railSize;
@@ -58,14 +57,12 @@ class PoolRenderer {
 
     this.drawTable(ctx);
 
-    // Draw balls
     for (const ball of physics.balls) {
       if (!ball.pocketed) {
         this.drawBall(ctx, ball, aimState.ballInHand && ball.id === 0);
       }
     }
 
-    // Draw cue stick ONLY when balls are stationary and it's an active turn (NO aiming line!)
     if (aimState.showCue) {
       const cueBall = physics.getCueBall();
       if (cueBall && !cueBall.pocketed) {
@@ -80,62 +77,99 @@ class PoolRenderer {
     const r = this.railSize;
     const theme = FELT_THEMES[this.themeIndex];
 
-    // 1. Outer Mahogany Wood Frame
+    // 1. Luxury Mahogany & Walnut Frame
     const woodGrad = ctx.createLinearGradient(0, 0, this.totalW, this.totalH);
-    woodGrad.addColorStop(0, '#5c2d16');
-    woodGrad.addColorStop(0.5, '#3e1d0d');
-    woodGrad.addColorStop(1, '#2b1206');
+    woodGrad.addColorStop(0, '#6b3419');
+    woodGrad.addColorStop(0.3, '#4a210e');
+    woodGrad.addColorStop(0.7, '#381708');
+    woodGrad.addColorStop(1, '#240d04');
 
     ctx.fillStyle = woodGrad;
-    this.roundRect(ctx, 0, 0, this.totalW, this.totalH, 26);
+    this.roundRect(ctx, 0, 0, this.totalW, this.totalH, 28);
     ctx.fill();
 
-    // Subtle inner wood bevel
-    ctx.strokeStyle = 'rgba(255, 210, 160, 0.14)';
+    // Subtle wood grain sheen
+    ctx.strokeStyle = 'rgba(255, 215, 165, 0.16)';
     ctx.lineWidth = 2;
-    this.roundRect(ctx, 2, 2, this.totalW - 4, this.totalH - 4, 24);
+    this.roundRect(ctx, 2, 2, this.totalW - 4, this.totalH - 4, 26);
     ctx.stroke();
 
-    // Brass corner plates
-    ctx.fillStyle = '#c59b47';
-    const corners = [
-      [0, 0],
-      [this.totalW - 48, 0],
-      [0, this.totalH - 48],
-      [this.totalW - 48, this.totalH - 48],
+    // Inner gold-trimmed wood molding
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.25)';
+    ctx.lineWidth = 1.5;
+    this.roundRect(ctx, r - 12, r - 12, TABLE_W + 24, TABLE_H + 24, 10);
+    ctx.stroke();
+
+    // Polished Brass Corner & Side Pocket Castings
+    const brassGrad = ctx.createLinearGradient(0, 0, 50, 50);
+    brassGrad.addColorStop(0, '#f3d98b');
+    brassGrad.addColorStop(0.5, '#c59b47');
+    brassGrad.addColorStop(1, '#8c6623');
+
+    const cornerPlates = [
+      [2, 2],
+      [this.totalW - 50, 2],
+      [2, this.totalH - 50],
+      [this.totalW - 50, this.totalH - 50],
     ];
-    for (const [cx, cy] of corners) {
+    for (const [cx, cy] of cornerPlates) {
       ctx.save();
-      ctx.beginPath();
-      this.roundRect(ctx, cx + 4, cy + 4, 40, 40, 12);
-      ctx.fillStyle = 'rgba(212, 175, 55, 0.22)';
+      this.roundRect(ctx, cx, cy, 48, 48, 16);
+      ctx.fillStyle = brassGrad;
+      ctx.globalAlpha = 0.28;
       ctx.fill();
       ctx.restore();
     }
 
-    // 2. Playing Surface (Felt)
+    // 2. Playing Surface (Felt) with Tournament Overhead Spotlight
     ctx.save();
     ctx.translate(r, r);
 
     const feltGrad = ctx.createRadialGradient(
       TABLE_W / 2,
       TABLE_H / 2,
-      40,
+      30,
       TABLE_W / 2,
       TABLE_H / 2,
-      TABLE_W * 0.65
+      TABLE_W * 0.62
     );
     feltGrad.addColorStop(0, theme.main);
+    feltGrad.addColorStop(0.55, theme.mid);
     feltGrad.addColorStop(1, theme.edge);
     ctx.fillStyle = feltGrad;
     ctx.fillRect(-10, -10, TABLE_W + 20, TABLE_H + 20);
 
-    // Cushions (inner border)
+    // Subtle Cushion Inner Shadow onto Felt (3D depth)
+    const shadowTop = ctx.createLinearGradient(0, 0, 0, 22);
+    shadowTop.addColorStop(0, 'rgba(0, 0, 0, 0.42)');
+    shadowTop.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = shadowTop;
+    ctx.fillRect(0, 0, TABLE_W, 22);
+
+    const shadowBot = ctx.createLinearGradient(0, TABLE_H - 22, 0, TABLE_H);
+    shadowBot.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    shadowBot.addColorStop(1, 'rgba(0, 0, 0, 0.42)');
+    ctx.fillStyle = shadowBot;
+    ctx.fillRect(0, TABLE_H - 22, TABLE_W, 22);
+
+    const shadowLeft = ctx.createLinearGradient(0, 0, 22, 0);
+    shadowLeft.addColorStop(0, 'rgba(0, 0, 0, 0.38)');
+    shadowLeft.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = shadowLeft;
+    ctx.fillRect(0, 0, 22, TABLE_H);
+
+    const shadowRight = ctx.createLinearGradient(TABLE_W - 22, 0, TABLE_W, 0);
+    shadowRight.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    shadowRight.addColorStop(1, 'rgba(0, 0, 0, 0.38)');
+    ctx.fillStyle = shadowRight;
+    ctx.fillRect(TABLE_W - 22, 0, 22, TABLE_H);
+
+    // Cushions (beveled inner border)
     ctx.strokeStyle = theme.cushion;
     ctx.lineWidth = 10;
     ctx.strokeRect(-5, -5, TABLE_W + 10, TABLE_H + 10);
 
-    // Head string (Baulk line) & Foot spot
+    // Head string (Baulk line)
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -143,18 +177,20 @@ class PoolRenderer {
     ctx.lineTo(TABLE_W * 0.25, TABLE_H);
     ctx.stroke();
 
-    // Center & Foot spots
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
-    for (const sx of [TABLE_W * 0.25, TABLE_W * 0.5, TABLE_W * 0.74]) {
+    // VIP Center Crest: "Tân Vip"
+    this.drawCenterEmblem(ctx);
+
+    // Break & Foot spots
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.24)';
+    for (const sx of [TABLE_W * 0.25, TABLE_W * 0.74]) {
       ctx.beginPath();
-      ctx.arc(sx, TABLE_H / 2, 3.5, 0, Math.PI * 2);
+      ctx.arc(sx, TABLE_H / 2, 3.8, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Diamond sights on rails (essential for skill-based bank shots!)
-    ctx.fillStyle = '#e2c275';
+    // Mother-of-pearl Diamond Sights on rails
     for (let i = 1; i <= 7; i++) {
-      if (i === 4) continue; // skip side pocket
+      if (i === 4) continue;
       const dx = (TABLE_W / 8) * i;
       this.drawDiamond(ctx, dx, -r * 0.52);
       this.drawDiamond(ctx, dx, TABLE_H + r * 0.52);
@@ -165,19 +201,25 @@ class PoolRenderer {
       this.drawDiamond(ctx, TABLE_W + r * 0.52, dy);
     }
 
-    // 3. Pockets
+    // 3. Pockets with Leather Rim & Deep Shadow
     for (const p of POCKETS) {
-      // Outer leather rim
+      // Leather pocket collar
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r + 5, 0, Math.PI * 2);
-      ctx.fillStyle = '#1a0e07';
+      ctx.arc(p.x, p.y, p.r + 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#1b0d06';
       ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(212, 175, 55, 0.25)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
 
       // Deep hole
       const pGrad = ctx.createRadialGradient(p.x, p.y, 4, p.x, p.y, p.r);
       pGrad.addColorStop(0, '#000000');
-      pGrad.addColorStop(0.8, '#0a0a0a');
-      pGrad.addColorStop(1, '#1f2937');
+      pGrad.addColorStop(0.78, '#07090d');
+      pGrad.addColorStop(1, '#1e293b');
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
       ctx.fillStyle = pGrad;
@@ -187,11 +229,62 @@ class PoolRenderer {
     ctx.restore();
   }
 
+  drawCenterEmblem(ctx) {
+    const cx = TABLE_W / 2;
+    const cy = TABLE_H / 2;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // Subtle outer emblem rings
+    ctx.beginPath();
+    ctx.arc(0, 0, 68, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(245, 208, 110, 0.16)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 61, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Crown / Star accent above text
+    ctx.fillStyle = 'rgba(245, 208, 110, 0.24)';
+    ctx.font = '700 13px "Be Vietnam Pro", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('★ VIP CLUB ★', 0, -24);
+
+    // Main "Tân Vip" text embossed on the felt
+    ctx.font = '800 30px "Be Vietnam Pro", sans-serif';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+    ctx.fillText('Tân Vip', 1.5, 5.5);
+
+    const textGrad = ctx.createLinearGradient(-55, -10, 55, 18);
+    textGrad.addColorStop(0, 'rgba(253, 230, 138, 0.34)');
+    textGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.38)');
+    textGrad.addColorStop(1, 'rgba(245, 158, 11, 0.32)');
+    ctx.fillStyle = textGrad;
+    ctx.fillText('Tân Vip', 0, 4);
+
+    // Subtitle
+    ctx.font = '600 9.5px "JetBrains Mono", monospace';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
+    ctx.fillText('PRO SKILL BILLIARDS', 0, 29);
+
+    ctx.restore();
+  }
+
   drawDiamond(ctx, x, y) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(Math.PI / 4);
-    ctx.fillRect(-3.2, -3.2, 6.4, 6.4);
+    ctx.fillStyle = '#fef3c7';
+    ctx.fillRect(-3.4, -3.4, 6.8, 6.8);
+    ctx.strokeStyle = 'rgba(180, 130, 40, 0.7)';
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(-3.4, -3.4, 6.8, 6.8);
     ctx.restore();
   }
 
@@ -202,28 +295,27 @@ class PoolRenderer {
 
     ctx.save();
 
-    // Drop shadow
+    // Soft ambient + directional drop shadow
     ctx.beginPath();
-    ctx.arc(x + 3, y + 4, r, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.38)';
+    ctx.arc(x + 3.5, y + 4.5, r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.42)';
     ctx.fill();
 
     // Highlight ring for Ball-in-Hand
     if (highlightCue) {
       ctx.beginPath();
-      ctx.arc(x, y, r + 5, 0, Math.PI * 2);
+      ctx.arc(x, y, r + 5.5, 0, Math.PI * 2);
       ctx.strokeStyle = '#34d399';
       ctx.lineWidth = 2.5;
       ctx.stroke();
     }
 
-    // Base sphere
+    // Ball body clipped to circle
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.clip();
 
     if (ball.isStripe) {
-      // White base with colored stripe band
       ctx.fillStyle = '#f8fafc';
       ctx.fillRect(x - r, y - r, r * 2, r * 2);
       ctx.fillStyle = ball.color;
@@ -236,7 +328,7 @@ class PoolRenderer {
     // Number circle on object balls
     if (ball.id > 0) {
       ctx.beginPath();
-      ctx.arc(x, y, r * 0.48, 0, Math.PI * 2);
+      ctx.arc(x, y, r * 0.49, 0, Math.PI * 2);
       ctx.fillStyle = '#ffffff';
       ctx.fill();
 
@@ -249,19 +341,25 @@ class PoolRenderer {
 
     // 3D Spherical shading overlay
     const shade = ctx.createRadialGradient(
-      x - r * 0.35,
-      y - r * 0.35,
-      r * 0.1,
+      x - r * 0.36,
+      y - r * 0.36,
+      r * 0.08,
       x,
       y,
       r
     );
-    shade.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
-    shade.addColorStop(0.35, 'rgba(255, 255, 255, 0.05)');
-    shade.addColorStop(0.8, 'rgba(0, 0, 0, 0.22)');
-    shade.addColorStop(1, 'rgba(0, 0, 0, 0.55)');
+    shade.addColorStop(0, 'rgba(255, 255, 255, 0.55)');
+    shade.addColorStop(0.28, 'rgba(255, 255, 255, 0.08)');
+    shade.addColorStop(0.75, 'rgba(0, 0, 0, 0.22)');
+    shade.addColorStop(1, 'rgba(0, 0, 0, 0.58)');
     ctx.fillStyle = shade;
     ctx.fillRect(x - r, y - r, r * 2, r * 2);
+
+    // Crisp glossy specular dot
+    ctx.beginPath();
+    ctx.ellipse(x - r * 0.34, y - r * 0.34, r * 0.22, r * 0.14, -Math.PI / 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+    ctx.fill();
 
     ctx.restore();
   }
@@ -270,22 +368,20 @@ class PoolRenderer {
     const cx = cueBall.x + this.railSize;
     const cy = cueBall.y + this.railSize;
 
-    // Pull-back distance from cue ball
     const pullback = 18 + powerPct * 95;
-    const stickLen = 340;
+    const stickLen = 350;
 
     ctx.save();
     ctx.translate(cx, cy);
-    // Stick sits BEHIND the cue ball (opposite to shot angle)
     ctx.rotate(angle + Math.PI);
 
-    // Subtle shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    // Soft shadow on felt
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.38)';
     ctx.beginPath();
-    ctx.moveTo(pullback, 2);
-    ctx.lineTo(pullback + stickLen, 5);
-    ctx.lineTo(pullback + stickLen, 10);
-    ctx.lineTo(pullback, 5);
+    ctx.moveTo(pullback, 3);
+    ctx.lineTo(pullback + stickLen, 6);
+    ctx.lineTo(pullback + stickLen, 11);
+    ctx.lineTo(pullback, 6);
     ctx.closePath();
     ctx.fill();
 
@@ -293,36 +389,45 @@ class PoolRenderer {
     ctx.fillStyle = '#38bdf8';
     ctx.fillRect(pullback, -2.5, 4, 5);
 
-    // White ferrule
+    // Ivory ferrule
     ctx.fillStyle = '#f8fafc';
-    ctx.fillRect(pullback + 4, -2.6, 8, 5.2);
+    ctx.fillRect(pullback + 4, -2.6, 9, 5.2);
 
-    // Maple shaft
-    const shaftGrad = ctx.createLinearGradient(pullback + 12, 0, pullback + 185, 0);
-    shaftGrad.addColorStop(0, '#f3d5a5');
-    shaftGrad.addColorStop(1, '#d4a36a');
+    // Canadian Maple shaft
+    const shaftGrad = ctx.createLinearGradient(pullback + 13, 0, pullback + 185, 0);
+    shaftGrad.addColorStop(0, '#f7dfb9');
+    shaftGrad.addColorStop(1, '#d19e62');
     ctx.fillStyle = shaftGrad;
     ctx.beginPath();
-    ctx.moveTo(pullback + 12, -2.6);
+    ctx.moveTo(pullback + 13, -2.6);
     ctx.lineTo(pullback + 185, -4.4);
     ctx.lineTo(pullback + 185, 4.4);
-    ctx.lineTo(pullback + 12, 2.6);
+    ctx.lineTo(pullback + 13, 2.6);
     ctx.closePath();
     ctx.fill();
 
-    // Carbon/Ebony butt
-    const buttGrad = ctx.createLinearGradient(pullback + 185, 0, pullback + stickLen, 0);
-    buttGrad.addColorStop(0, '#1e293b');
-    buttGrad.addColorStop(0.5, '#7c2d12');
-    buttGrad.addColorStop(1, '#0f172a');
+    // Brass joint collar
+    ctx.fillStyle = '#eab308';
+    ctx.fillRect(pullback + 183, -4.5, 5, 9);
+
+    // Ebony & Rosewood VIP butt
+    const buttGrad = ctx.createLinearGradient(pullback + 188, 0, pullback + stickLen, 0);
+    buttGrad.addColorStop(0, '#111827');
+    buttGrad.addColorStop(0.45, '#7c2d12');
+    buttGrad.addColorStop(0.85, '#1e293b');
+    buttGrad.addColorStop(1, '#090d14');
     ctx.fillStyle = buttGrad;
     ctx.beginPath();
-    ctx.moveTo(pullback + 185, -4.4);
-    ctx.lineTo(pullback + stickLen, -6.5);
-    ctx.lineTo(pullback + stickLen, 6.5);
-    ctx.lineTo(pullback + 185, 4.4);
+    ctx.moveTo(pullback + 188, -4.5);
+    ctx.lineTo(pullback + stickLen, -6.6);
+    ctx.lineTo(pullback + stickLen, 6.6);
+    ctx.lineTo(pullback + 188, 4.5);
     ctx.closePath();
     ctx.fill();
+
+    // Gold inlay ring at butt cap
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(pullback + stickLen - 14, -6.2, 3.5, 12.4);
 
     ctx.restore();
   }
