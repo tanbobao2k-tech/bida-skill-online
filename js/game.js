@@ -210,8 +210,14 @@
     const g1 = document.getElementById('p1-group');
     const g2 = document.getElementById('p2-group');
     if (rules.mode === '8ball') {
-      g1.textContent = rules.groups[1] === 'solid' ? 'TRƠN (1-7)' : rules.groups[1] === 'stripe' ? 'SỌC (9-15)' : '';
-      g2.textContent = rules.groups[2] === 'solid' ? 'TRƠN (1-7)' : rules.groups[2] === 'stripe' ? 'SỌC (9-15)' : '';
+      const formatGroup = (pNum) => {
+        const g = rules.groups[pNum];
+        if (!g) return '';
+        if (!rules.hasRemainingGroup(physics, g)) return 'CHỐT BI 8 🎱';
+        return g === 'solid' ? 'TRƠN (1-7)' : 'SỌC (9-15)';
+      };
+      g1.textContent = formatGroup(1);
+      g2.textContent = formatGroup(2);
     } else if (rules.mode === '9ball') {
       const lowest = rules.getLowestBallId(physics);
       g1.textContent = lowest ? `Mục tiêu: #${lowest}` : '';

@@ -131,30 +131,49 @@ class PoolRules {
   evaluate8Ball(physics, events, scratched, objectPocketed, otherPlayer) {
     const currentGroup = this.groups[this.turn];
     const eightPocketed = objectPocketed.includes(8);
+    // Player must have cleared ALL of their own balls BEFORE this shot to shoot the 8-ball
+    const hadClearedOwnBeforeShot =
+      !this.tableOpen &&
+      currentGroup &&
+      !this.hasRemainingGroup(physics, currentGroup) &&
+      !objectPocketed.some((id) => this.getGroupOf(id) === currentGroup);
 
     // 1. Check 8-ball pocketed
     if (eightPocketed) {
       if (this.isBreakShot) {
-        // On break, pocketing 8 without scratch is a win (or re-spot, let's award win if clean)
-        if (scratched) {
-          this.winner = otherPlayer;
-          this.winReason = 'Phạm lỗi đưa bi cái & bi 8 vào lỗ khi phá bi!';
-        } else {
-          this.winner = this.turn;
-          this.winReason = 'Phá bi đỉnh cao — Đưa bi 8 vào lỗ hợp lệ!';
+        // Re-spot 8-ball on break instead of instant win
+        const b8 = physics.balls.find((b) => b.id === 8);
+        if (b8) {
+          b8.pocketed = false;
+          b8.x = TABLE_W * 0.74;
+          b8.y = TABLE_H / 2;
         }
-        return { message: this.winReason, gameOver: true };
+        if (scratched) {
+          const cue = physics.getCueBall();
+          cue.pocketed = false;
+          cue.x = TABLE_W * 0.25;
+          cue.y = TABLE_H / 2;
+          this.isBreakShot = false;
+          this.turn = otherPlayer;
+          this.ballInHand = true;
+          return { message: 'Phá bi rơi bi cái & bi 8 — Đặt lại bi 8, đối thủ đặt bi!', foul: true };
+        }
+        this.isBreakShot = false;
+        return { message: 'Bi số 8 vào lỗ khi phá bi — Đã đặt lại bi 8 lên bàn!', foul: false };
       }
 
-      const clearedOwn = currentGroup && !this.hasRemainingGroup(physics, currentGroup);
-      if (!scratched && clearedOwn) {
+      if (!scratched && hadClearedOwnBeforeShot && events.firstHit === 8) {
         this.winner = this.turn;
-        this.winReason = `Người chơi ${this.turn} đã chốt bi số 8 hợp lệ!`;
+        this.winReason = `Người chơi ${this.turn} đã ăn hết bi của mình và chốt bi số 8 hợp lệ!`;
       } else {
         this.winner = otherPlayer;
-        this.winReason = scratched
-          ? 'Rơi bi cái khi đánh bi số 8 — Thua cuộc!'
-          : 'Đưa bi số 8 vào lỗ quá sớm — Thua cuộc!';
+        if (scratched) {
+          this.winReason = 'Rơi bi cái khi đánh bi số 8 — Thua cuộc!';
+        } else if (!hadClearedOwnBeforeShot) {
+          this.winReason = 'Chưa ăn hết bi của mình mà đã đưa bi số 8 vào lỗ — Thua cuộc!';
+        } else {
+          this.winReason = 'Chạm bi khác trước khi đánh bi số 8 — Thua cuộc!';
+        }
       }
       return { message: this.winReason, gameOver: true };
     }
@@ -167,13 +186,17 @@ class PoolRules {
       foulReason = 'Lỗi: Không chạm bi nào!';
     } else if (!this.isBreakShot && !this.tableOpen && currentGroup) {
       const hitGroup = this.getGroupOf(events.firstHit);
-      const clearedOwn = !this.hasRemainingGroup(physics, currentGroup);
-      if (clearedOwn) {
-        if (events.firstHit !== 8) foulReason = 'Lỗi: Phải chạm bi số 8 trước!';
+      if (hadClearedOwnBeforeShot) {
+        if (events.firstHit !== 8) foulReason = 'Lỗi: Đã hết bi, phải chạm bi số 8 trước!';
       } else if (hitGroup !== currentGroup) {
-        foulReason = 'Lỗi: Chạm nhầm bi đối thủ trước!';
+        foulReason =
+          events.firstHit === 8
+            ? 'Lỗi: Chưa ăn hết bi của mình, không được đánh bi 8 trước!'
+            : 'Lỗi: Chạm nhầm bi đối thủ trước!';
       }
-    } else if (!events.railAfterContact && objectPocketed.length === 0) {
+    }
+
+    if (!foulReason && !events.railAfterContact && objectPocketed.length === 0) {
       foulReason = 'Lỗi: Không có bi chạm băng sau va chạm!';
     }
 
